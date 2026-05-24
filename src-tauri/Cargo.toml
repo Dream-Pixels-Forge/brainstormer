@@ -1,0 +1,21 @@
+[package]
+name = "brainstormer"
+version = "0.1.0"
+description = "AI-powered brainstorming desktop widget"
+authors = ["Brainstormer Team"]
+edition = "2021"
+
+[lib]
+name = "brainstormer_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "devtools"] }
+tauri-plugin-opener = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
+  "productName": "Brainstormer",
+  "version": "0.1.0",
+  "identifier": "com.brainstormer.widget",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../.next/standalone"
+  },
+  "app": {
+    "title": "Brainstormer",
+    "windows": [
+      {
+        "label": "main",
+        "title": "Brainstormer",
+        "width": 460,
+        "height": 640,
+        "minWidth": 360,
+        "minHeight": 480,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": false,
+        "resizable": true,
+        "center": true,
+        "skipTaskbar": false,
+        "visible": true,
+        "shadow": true
+      }
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true,
+      "tooltip": "Brainstormer — AI Brainstorming Widget"
+    },
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://* http://localhost:*"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Productivity",
+    "shortDescription": "AI-powered brainstorming widget",
+    "longDescription": "Brainstormer is an AI-powered desktop widget for writers and designers. Generate ideas, explore concepts through interactive Q&A, record voice notes, and export in multiple formats.",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    }
+  },
+  "plugins": {
+    "global-shortcut": {
+      "shortcuts": [
+        {
+          "key": "Ctrl+Shift+B",
+          "command": "toggle_window",
+          "description": "Show/Hide Brainstormer"
+        }
+      ]
+    }
+  }
+}

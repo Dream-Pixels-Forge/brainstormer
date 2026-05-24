@@ -18,6 +18,8 @@ const exportFormats = [
   { id: 'prd', label: 'PRD', icon: <ClipboardList className="size-3.5" />, ext: 'md' },
 ]
 
+const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+
 export function ExportPanel() {
   const { generatedContent, promptConfig } = useBrainstormerStore()
   const [selectedFormat, setSelectedFormat] = useState('markdown')
@@ -44,7 +46,7 @@ export function ExportPanel() {
     }
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const content = getExportContent()
     if (!content) {
       toast.error('No content to download')
@@ -53,13 +55,36 @@ export function ExportPanel() {
 
     const format = exportFormats.find((f) => f.id === selectedFormat)
     const ext = format?.ext || 'txt'
-    const mimeType = selectedFormat === 'html' ? 'text/html' : selectedFormat === 'json' ? 'application/json' : 'text/plain'
+    const filename = `${topic.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.${ext}`
 
+    // In Tauri, use native file save dialog
+    if (isTauri()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core')
+        const savedPath = await invoke<string>('save_file', {
+          content,
+          filename,
+        })
+        toast.success(`Saved to ${savedPath}`)
+      } catch (err) {
+        if (err === 'Cancelled') return
+        // Fallback to browser download
+        browserDownload(content, ext, filename)
+      }
+      return
+    }
+
+    // Browser fallback
+    browserDownload(content, ext, filename)
+  }
+
+  const browserDownload = (content: string, ext: string, filename: string) => {
+    const mimeType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/plain'
     const blob = new Blob([content], { type: mimeType })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${topic.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.${ext}`
+    a.download = filename
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -176,7 +201,7 @@ export function ExportPanel() {
           className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-semibold"
         >
           <Download className="size-3.5" />
-          Download
+          {isTauri() ? 'Save As...' : 'Download'}
         </Button>
       </div>
     </div>

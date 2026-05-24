@@ -88,3 +88,70 @@ Stage Summary:
 - Multiple UX improvements added
 - Lint: 0 errors, 0 warnings
 - Dev server running on port 3000
+
+---
+Task ID: 7
+Agent: Main Orchestrator
+Task: Convert to Tauri desktop widget architecture
+
+Work Log:
+- Redesigned page.tsx — widget IS the page (no landing page), Tauri frameless window
+- Rewrote WidgetShell.tsx for Tauri:
+  - Custom titlebar with data-tauri-drag-region
+  - Pin/always-on-top toggle
+  - Minimize → hide to system tray (Tauri) or minimize (browser)
+  - Close → hide to tray (Tauri) or close (browser)
+  - Compact mode toggle
+  - Status bar showing runtime mode (Desktop/Web)
+  - Auto-opens on mount
+  - Escape to minimize
+- Created Tauri project structure:
+  - src-tauri/Cargo.toml — Rust dependencies (tauri 2, plugins)
+  - src-tauri/tauri.conf.json — frameless window, transparent, system tray, global shortcuts
+  - src-tauri/src/main.rs — Rust backend: toggle_window, set_always_on_top, save_file commands, tray menu, close-to-tray
+  - src-tauri/src/lib.rs — library entry for mobile builds
+  - src-tauri/icons/ — widget icons at various sizes
+- Updated layout.tsx — dark class always on, transparent body background
+- Updated globals.css — dark-only theme, transparent body, Tauri drag region styles
+- Updated ExportPanel.tsx — uses Tauri native save dialog when available
+- Created src/lib/use-tauri.ts — React hooks for Tauri API detection and window management
+- Updated package.json — added @tauri-apps/api, @tauri-apps/cli, plugins, tauri scripts
+- Fixed lint errors: moved handleMinimize/handleClose before useEffect, used lazy useState init
+
+Stage Summary:
+- Architecture fully converted from web-overlay widget to Tauri desktop widget
+- Tauri window: frameless, transparent, resizable, close-to-tray, system tray with menu
+- Global shortcut Ctrl+Shift+B via Tauri plugin
+- Native file save dialog in Tauri, browser fallback in web
+- All components Tauri-aware with graceful browser fallback
+- Lint: 0 errors, 0 warnings
+
+---
+Task ID: 6-final
+Agent: Visual QA Tester
+Task: Final visual test of Brainstormer Widget — screenshot, VLM analysis, fix issues, verify centering, lint
+
+Work Log:
+- Opened page at http://localhost:3000 via agent-browser
+- Took screenshots of all 5 tabs: Spark, Chat, Voice, Export, History
+- Used VLM (z-ai vision) to analyze each screenshot for visual issues
+- Verified all visual requirements:
+  - Widget is centered in viewport (confirmed via bounding rect: x=420 in 1280px viewport = perfect center)
+  - Dark glassmorphism background present (bg-zinc-900/95 + backdrop-blur-xl)
+  - Custom titlebar with icon, "Brainstormer" title, Pin/Compact/Minimize/Close buttons
+  - 5 tabs: Spark, Chat, Voice, Export, History — all present and functional
+  - Status bar at bottom showing "Web · AI Ready" with green indicator
+  - Widget fills viewport properly (440×553 in 1280×577 viewport with 12px padding)
+- VLM analysis found NO critical visual issues across any tab
+- Verified widget dimensions: perfectly centered horizontally (640px center), equal padding top/bottom (12px)
+- All tab content renders correctly: Spark (templates/selectors), Chat (message area/input), Voice (timer/waveform/record button), Export (empty state with button), History (save button/empty state)
+- Ran `bun run lint` — 0 errors, 0 warnings
+- No fixes needed — all visual requirements met
+
+Stage Summary:
+- Final visual QA passed — no critical issues found
+- Widget centered and fills viewport correctly
+- All 5 tabs render correctly with proper styling
+- Status bar displays "Web · AI Ready" as expected
+- Lint: 0 errors, 0 warnings
+- No code changes required
