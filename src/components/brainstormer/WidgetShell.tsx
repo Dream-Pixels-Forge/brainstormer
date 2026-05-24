@@ -187,26 +187,26 @@ export function WidgetShell() {
   }
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center bg-zinc-950/95 p-3">
+    <div className="h-screen w-screen flex items-end justify-center bg-zinc-950/95 pb-4 pt-4">
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className={`flex flex-col w-full h-full max-w-[440px] rounded-2xl border border-white/10 bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden widget-focused ${
-          isCompact ? 'max-h-[400px]' : ''
+        className={`flex flex-col w-full max-w-[400px] rounded-2xl border border-white/10 bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden widget-focused ${
+          isCompact ? 'max-h-[340px]' : 'max-h-[480px]'
         }`}
       >
         {/* Custom Titlebar */}
         <div
-          className="flex items-center gap-3 px-4 py-2.5 border-b border-white/10 select-none shrink-0"
+          className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 select-none shrink-0"
           data-tauri-drag-region
         >
           <div className="flex items-center gap-2 flex-1 min-w-0" data-tauri-drag-region>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/20 shrink-0">
-              <img src="/brainstormer-icon.png" alt="Brainstormer" className="size-4 rounded" />
+            <div className="flex size-5 items-center justify-center rounded bg-amber-500/20 shrink-0">
+              <img src="/brainstormer-icon.png" alt="Brainstormer" className="size-3 rounded" />
             </div>
-            <span className="font-semibold text-white text-sm tracking-wide">Brainstormer</span>
-            <span className="text-[10px] text-amber-400/60 font-medium ml-1">
+            <span className="font-semibold text-white text-xs tracking-wide">Brainstormer</span>
+            <span className="text-[9px] text-amber-400/60 font-medium ml-1">
               {stageLabel[stage] || ''}
             </span>
           </div>
@@ -214,36 +214,36 @@ export function WidgetShell() {
           <div className="flex items-center gap-0.5">
             <button
               onClick={handleAlwaysOnTop}
-              className={`flex size-7 items-center justify-center rounded-md transition-colors ${
+              className={`flex size-5 items-center justify-center rounded transition-colors ${
                 alwaysOnTop ? 'text-amber-400 bg-amber-500/10' : 'text-white/40 hover:text-white hover:bg-white/10'
               }`}
               aria-label={alwaysOnTop ? 'Unpin' : 'Pin on top'}
               title={alwaysOnTop ? 'Unpin' : 'Pin on top'}
             >
-              {alwaysOnTop ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+              {alwaysOnTop ? <PinOff className="size-3" /> : <Pin className="size-3" />}
             </button>
             <button
               onClick={() => setIsCompact(!isCompact)}
-              className={`flex size-7 items-center justify-center rounded-md transition-colors ${
+              className={`flex size-5 items-center justify-center rounded transition-colors ${
                 isCompact ? 'text-amber-400 bg-amber-500/10' : 'text-white/40 hover:text-white hover:bg-white/10'
               }`}
               aria-label={isCompact ? 'Expand' : 'Compact'}
             >
-              <Minus className="size-3.5" />
+              <Minus className="size-3" />
             </button>
             <button
               onClick={handleMinimize}
-              className="flex size-7 items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+              className="flex size-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Minimize"
             >
-              <Minus className="size-4" />
+              <Minus className="size-3" />
             </button>
             <button
               onClick={handleClose}
-              className="flex size-7 items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              className="flex size-5 items-center justify-center rounded text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
               aria-label="Close"
             >
-              <X className="size-3.5" />
+              <X className="size-3" />
             </button>
           </div>
         </div>
@@ -254,7 +254,7 @@ export function WidgetShell() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+              className={`flex flex-1 items-center justify-center gap-1 py-1.5 text-[11px] font-medium transition-colors relative ${
                 activeTab === tab.id
                   ? 'text-amber-400'
                   : 'text-white/40 hover:text-white/70'
@@ -288,22 +288,22 @@ export function WidgetShell() {
         </AnimatePresence>
 
         {/* Status bar */}
-        <div className="flex items-center justify-between px-3 py-1.5 border-t border-white/5 shrink-0">
+        <div className="flex items-center justify-between px-3 py-1 border-t border-white/5 shrink-0">
           <div className="flex items-center gap-1.5">
             <div className={`size-1.5 rounded-full animate-pulse ${
               stage === 'analyzing' || stage === 'generating' ? 'bg-amber-500' : 'bg-emerald-500'
             }`} />
-            <span className="text-[10px] text-white/30">
+            <span className="text-[9px] text-white/30">
               {isTauri() ? 'Desktop' : 'Web'} · {stage === 'analyzing' || stage === 'generating' ? 'Working...' : 'AI Ready'}
             </span>
           </div>
           <div className="flex items-center gap-2">
             {alwaysOnTop && (
-              <span className="text-[10px] text-amber-400/60 flex items-center gap-1">
-                <Pin className="size-2.5" /> Pinned
+              <span className="text-[9px] text-amber-400/60 flex items-center gap-1">
+                <Pin className="size-2" /> Pinned
               </span>
             )}
-            <span className="text-[10px] text-white/20">Ctrl+Shift+B</span>
+            <span className="text-[9px] text-white/20">⌘⇧B</span>
           </div>
         </div>
       </motion.div>

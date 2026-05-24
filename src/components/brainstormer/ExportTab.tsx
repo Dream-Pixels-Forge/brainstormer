@@ -62,42 +62,42 @@ function FileCard({ file, onDownload, onCopy }: { file: ProjectFile; onDownload:
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="rounded-lg bg-white/5 border border-white/10 overflow-hidden">
+    <div className="rounded-md bg-white/5 border border-white/10 overflow-hidden">
       {/* Header row */}
-      <div className="flex items-center gap-2 p-3">
-        <FileText className="size-4 text-amber-400 shrink-0" />
+      <div className="flex items-center gap-2 p-2">
+        <FileText className="size-3.5 text-amber-400 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white/90 truncate">{file.filename}</p>
-          <p className="text-xs text-white/40 truncate">{file.description}</p>
+          <p className="text-xs font-medium text-white/90 truncate">{file.filename}</p>
+          <p className="text-[10px] text-white/40 truncate">{file.description}</p>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           <button
             onClick={() => onCopy(file)}
-            className="flex size-7 items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            className="flex size-6 items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
             aria-label={`Copy ${file.filename}`}
           >
-            <Copy className="size-3.5" />
+            <Copy className="size-3" />
           </button>
           <button
             onClick={() => onDownload(file)}
-            className="flex size-7 items-center justify-center rounded-md text-white/40 hover:text-amber-400 hover:bg-white/10 transition-colors"
+            className="flex size-6 items-center justify-center rounded text-white/40 hover:text-amber-400 hover:bg-white/10 transition-colors"
             aria-label={`Download ${file.filename}`}
           >
-            <Download className="size-3.5" />
+            <Download className="size-3" />
           </button>
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex size-7 items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            className="flex size-6 items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
             aria-label={expanded ? 'Collapse' : 'Expand'}
           >
-            {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+            {expanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
           </button>
         </div>
       </div>
       {/* Preview content */}
       {expanded && (
-        <div className="border-t border-white/10 px-3 py-2">
-          <pre className="text-xs text-white/60 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">
+        <div className="border-t border-white/10 px-2 py-1.5">
+          <pre className="text-[10px] text-white/60 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-40 overflow-y-auto">
             {file.content}
           </pre>
         </div>
@@ -295,13 +295,13 @@ export function ExportTab() {
   return (
     <div className="flex flex-col h-full">
       {/* Top — Status */}
-      <div className="px-4 pt-4 pb-2 shrink-0">
+      <div className="px-3 pt-3 pb-1.5 shrink-0">
         {renderStatus()}
       </div>
 
       {/* Middle — File list */}
-      <ScrollArea className="flex-1 px-4">
-        <div className="space-y-2 pb-4">
+      <ScrollArea className="flex-1 px-3">
+        <div className="space-y-1.5 pb-3">
           {projectFiles.map((file) => (
             <FileCard
               key={file.filename}
@@ -312,13 +312,13 @@ export function ExportTab() {
           ))}
 
           {projectFiles.length === 0 && !isGeneratingFiles && (
-            <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-              <div className="size-12 rounded-full bg-white/5 flex items-center justify-center">
-                <FileText className="size-6 text-white/20" />
+            <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
+              <div className="size-9 rounded-full bg-white/5 flex items-center justify-center">
+                <FileText className="size-4 text-white/20" />
               </div>
               <div>
-                <p className="text-sm text-white/50">No project files yet</p>
-                <p className="text-xs text-white/30 mt-1">
+                <p className="text-xs text-white/50">No project files yet</p>
+                <p className="text-[10px] text-white/30 mt-0.5">
                   Complete the brainstorming Q&A to generate files
                 </p>
               </div>
@@ -328,7 +328,7 @@ export function ExportTab() {
       </ScrollArea>
 
       {/* Bottom — Actions */}
-      <div className="border-t border-white/10 p-3 flex gap-2 shrink-0">
+      <div className="border-t border-white/10 p-2 flex gap-1.5 shrink-0">
         <Button
           onClick={handleDownloadAll}
           disabled={projectFiles.length === 0 || isGeneratingFiles}

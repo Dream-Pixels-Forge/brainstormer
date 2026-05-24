@@ -189,12 +189,12 @@ export function SettingsTab() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 space-y-5">
+      <div className="p-3 space-y-3">
 
         {/* Section 1: AI Model */}
-        <section className="rounded-lg bg-white/5 border border-white/10 p-4 space-y-3">
-          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
-            <Cloud className="size-3.5" />
+        <section className="rounded-md bg-white/5 border border-white/10 p-3 space-y-2">
+          <h3 className="text-[10px] font-semibold text-white/50 uppercase tracking-wider flex items-center gap-1.5">
+            <Cloud className="size-3" />
             AI Model
           </h3>
           <RadioGroup
@@ -202,24 +202,24 @@ export function SettingsTab() {
             onValueChange={handleLLMModelChange}
             className="space-y-2"
           >
-            <div className="flex items-center gap-3 rounded-md bg-white/5 p-3 border border-white/5 hover:border-white/10 transition-colors">
+            <div className="flex items-center gap-2 rounded bg-white/5 p-2 border border-white/5 hover:border-white/10 transition-colors">
               <RadioGroupItem value="cloud" id="llm-cloud" className="border-white/30 data-[state=checked]:border-amber-500 data-[state=checked]:text-amber-500" />
               <Label htmlFor="llm-cloud" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-2">
-                  <Cloud className="size-4 text-amber-400" />
-                  <span className="text-sm text-white/90">Cloud</span>
+                <div className="flex items-center gap-1.5">
+                  <Cloud className="size-3.5 text-amber-400" />
+                  <span className="text-xs text-white/90">Cloud</span>
                 </div>
-                <p className="text-xs text-white/40 mt-0.5 ml-6">Uses cloud AI (Gemini/OpenAI)</p>
+                <p className="text-[10px] text-white/40 mt-0.5 ml-5">Cloud AI (Gemini/OpenAI)</p>
               </Label>
             </div>
-            <div className="flex items-center gap-3 rounded-md bg-white/5 p-3 border border-white/5 hover:border-white/10 transition-colors">
+            <div className="flex items-center gap-2 rounded bg-white/5 p-2 border border-white/5 hover:border-white/10 transition-colors">
               <RadioGroupItem value="local" id="llm-local" className="border-white/30 data-[state=checked]:border-amber-500 data-[state=checked]:text-amber-500" />
               <Label htmlFor="llm-local" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-2">
-                  <Monitor className="size-4 text-emerald-400" />
-                  <span className="text-sm text-white/90">Local</span>
+                <div className="flex items-center gap-1.5">
+                  <Monitor className="size-3.5 text-emerald-400" />
+                  <span className="text-xs text-white/90">Local</span>
                 </div>
-                <p className="text-xs text-white/40 mt-0.5 ml-6">Uses local model (Ollama/LM Studio)</p>
+                <p className="text-[10px] text-white/40 mt-0.5 ml-5">Local model (Ollama/LM Studio)</p>
               </Label>
             </div>
           </RadioGroup>
@@ -231,17 +231,17 @@ export function SettingsTab() {
         </section>
 
         {/* Section 2: Brainstorming */}
-        <section className="rounded-lg bg-white/5 border border-white/10 p-4 space-y-4">
-          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
-            <FlaskConical className="size-3.5" />
+        <section className="rounded-md bg-white/5 border border-white/10 p-3 space-y-3">
+          <h3 className="text-[10px] font-semibold text-white/50 uppercase tracking-wider flex items-center gap-1.5">
+            <FlaskConical className="size-3" />
             Brainstorming
           </h3>
 
           {/* Question count slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-sm text-white/70">Question Count</Label>
-              <span className="text-sm font-medium text-amber-400">
+              <Label className="text-xs text-white/70">Question Count</Label>
+              <span className="text-xs font-medium text-amber-400">
                 Ask {settings.questionCount} questions
               </span>
             </div>
@@ -264,11 +264,11 @@ export function SettingsTab() {
           {/* Research mode toggle */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label className="text-sm text-white/70 flex items-center gap-2">
-                {settings.researchMode && <FlaskConical className="size-3.5 text-amber-400" />}
+              <Label className="text-xs text-white/70 flex items-center gap-1.5">
+                {settings.researchMode && <FlaskConical className="size-3 text-amber-400" />}
                 Research Mode
               </Label>
-              <p className="text-xs text-white/40">AI will research the web before answering</p>
+              <p className="text-[10px] text-white/40">AI will research the web before answering</p>
             </div>
             <Switch
               checked={settings.researchMode}
@@ -279,17 +279,17 @@ export function SettingsTab() {
         </section>
 
         {/* Section 3: Voice */}
-        <section className="rounded-lg bg-white/5 border border-white/10 p-4 space-y-4">
-          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
-            <Volume2 className="size-3.5" />
+        <section className="rounded-md bg-white/5 border border-white/10 p-3 space-y-3">
+          <h3 className="text-[10px] font-semibold text-white/50 uppercase tracking-wider flex items-center gap-1.5">
+            <Volume2 className="size-3" />
             Voice
           </h3>
 
           {/* TTS toggle */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label className="text-sm text-white/70">Voice Output</Label>
-              <p className="text-xs text-white/40">Enable text-to-speech for responses</p>
+              <Label className="text-xs text-white/70">Voice Output</Label>
+              <p className="text-[10px] text-white/40">Enable text-to-speech for responses</p>
             </div>
             <Switch
               checked={settings.ttsEnabled}
@@ -302,30 +302,30 @@ export function SettingsTab() {
 
           {/* TTS Engine selection */}
           <div className="space-y-2">
-            <Label className="text-sm text-white/70">TTS Engine</Label>
+            <Label className="text-xs text-white/70">TTS Engine</Label>
             <RadioGroup
               value={settings.ttsEngine}
               onValueChange={handleTTSEngineChange}
               className="space-y-2"
             >
-              <div className="flex items-center gap-3 rounded-md bg-white/5 p-3 border border-white/5 hover:border-white/10 transition-colors">
+              <div className="flex items-center gap-2 rounded bg-white/5 p-2 border border-white/5 hover:border-white/10 transition-colors">
                 <RadioGroupItem value="kokoro" id="tts-kokoro" className="border-white/30 data-[state=checked]:border-amber-500 data-[state=checked]:text-amber-500" />
                 <Label htmlFor="tts-kokoro" className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">🔊</span>
-                    <span className="text-sm text-white/90">Kokoro (Local)</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1 py-0.5 rounded">🔊</span>
+                    <span className="text-xs text-white/90">Kokoro (Local)</span>
                   </div>
-                  <p className="text-xs text-white/40 mt-0.5 ml-7">Lightweight local TTS</p>
+                  <p className="text-[10px] text-white/40 mt-0.5 ml-6">Lightweight local TTS</p>
                 </Label>
               </div>
-              <div className="flex items-center gap-3 rounded-md bg-white/5 p-3 border border-white/5 hover:border-white/10 transition-colors">
+              <div className="flex items-center gap-2 rounded bg-white/5 p-2 border border-white/5 hover:border-white/10 transition-colors">
                 <RadioGroupItem value="browser" id="tts-browser" className="border-white/30 data-[state=checked]:border-amber-500 data-[state=checked]:text-amber-500" />
                 <Label htmlFor="tts-browser" className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">🌐</span>
-                    <span className="text-sm text-white/90">Browser</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1 py-0.5 rounded">🌐</span>
+                    <span className="text-xs text-white/90">Browser</span>
                   </div>
-                  <p className="text-xs text-white/40 mt-0.5 ml-7">Built-in speech synthesis</p>
+                  <p className="text-[10px] text-white/40 mt-0.5 ml-6">Built-in speech synthesis</p>
                 </Label>
               </div>
             </RadioGroup>
@@ -344,16 +344,16 @@ export function SettingsTab() {
         </section>
 
         {/* Section 4: GitHub Integration */}
-        <section className="rounded-lg bg-white/5 border border-white/10 p-4 space-y-4">
-          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
-            <Github className="size-3.5" />
+        <section className="rounded-md bg-white/5 border border-white/10 p-3 space-y-3">
+          <h3 className="text-[10px] font-semibold text-white/50 uppercase tracking-wider flex items-center gap-1.5">
+            <Github className="size-3" />
             GitHub Integration
           </h3>
 
           {/* Repository URL */}
-          <div className="space-y-1.5">
-            <Label className="text-sm text-white/70 flex items-center gap-1.5">
-              <Link className="size-3.5" />
+          <div className="space-y-1">
+            <Label className="text-xs text-white/70 flex items-center gap-1.5">
+              <Link className="size-3" />
               Repository URL
             </Label>
             <Input
@@ -367,8 +367,8 @@ export function SettingsTab() {
           {/* Auto-populate toggle */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label className="text-sm text-white/70">Auto-populate</Label>
-              <p className="text-xs text-white/40">Use repo info to set project name, description, tags</p>
+              <Label className="text-xs text-white/70">Auto-populate</Label>
+              <p className="text-[10px] text-white/40">Use repo info to set project name, description, tags</p>
             </div>
             <Switch
               checked={settings.github.autoPopulate}
@@ -380,9 +380,9 @@ export function SettingsTab() {
           <Separator className="bg-white/10" />
 
           {/* Project name */}
-          <div className="space-y-1.5">
-            <Label className="text-sm text-white/70 flex items-center gap-1.5">
-              <FileText className="size-3.5" />
+          <div className="space-y-1">
+            <Label className="text-xs text-white/70 flex items-center gap-1.5">
+              <FileText className="size-3" />
               Project Name
             </Label>
             <Input
@@ -395,8 +395,8 @@ export function SettingsTab() {
           </div>
 
           {/* Description */}
-          <div className="space-y-1.5">
-            <Label className="text-sm text-white/70">Description</Label>
+          <div className="space-y-1">
+            <Label className="text-xs text-white/70">Description</Label>
             <Textarea
               value={settings.github.description}
               onChange={(e) => setGitHubConfig({ description: e.target.value })}
@@ -408,9 +408,9 @@ export function SettingsTab() {
           </div>
 
           {/* Tags */}
-          <div className="space-y-1.5">
-            <Label className="text-sm text-white/70 flex items-center gap-1.5">
-              <Tag className="size-3.5" />
+          <div className="space-y-1">
+            <Label className="text-xs text-white/70 flex items-center gap-1.5">
+              <Tag className="size-3" />
               Tags
             </Label>
             <Input
@@ -434,16 +434,16 @@ export function SettingsTab() {
         </section>
 
         {/* Section 5: Data */}
-        <section className="rounded-lg bg-white/5 border border-white/10 p-4 space-y-4">
-          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
-            <Database className="size-3.5" />
+        <section className="rounded-md bg-white/5 border border-white/10 p-3 space-y-3">
+          <h3 className="text-[10px] font-semibold text-white/50 uppercase tracking-wider flex items-center gap-1.5">
+            <Database className="size-3" />
             Data
           </h3>
 
           {/* Sessions count */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-white/70">Saved Sessions</span>
-            <span className="text-sm font-medium text-white/90">{sessions.length}</span>
+            <span className="text-xs text-white/70">Saved Sessions</span>
+            <span className="text-xs font-medium text-white/90">{sessions.length}</span>
           </div>
 
           <Separator className="bg-white/10" />

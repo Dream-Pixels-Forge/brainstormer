@@ -57,7 +57,7 @@ function WaveformBars({ isActive }: { isActive: boolean }) {
   const barCount = 18
 
   return (
-    <div className="flex items-center justify-center gap-[3px] h-12">
+    <div className="flex items-center justify-center gap-[2px] h-8">
       {Array.from({ length: barCount }).map((_, i) => (
         <div
           key={i}
@@ -298,37 +298,37 @@ export function SparkTab() {
   const isIdeaEmpty = idea.trim().length === 0
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-full p-6 gap-6">
+    <div className="flex flex-col items-center justify-center min-h-full p-4 gap-3">
       {/* Glowing brain icon */}
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-amber-500/20 blur-xl scale-150" />
-        <Brain className="size-16 text-amber-500 relative z-10" strokeWidth={1.5} />
+        <Brain className="size-10 text-amber-500 relative z-10" strokeWidth={1.5} />
       </div>
 
       {/* Heading */}
-      <div className="text-center space-y-1">
-        <h2 className="text-2xl font-bold text-white">What&apos;s your idea?</h2>
-        <p className="text-sm text-white/50">
+      <div className="text-center space-y-0.5">
+        <h2 className="text-lg font-bold text-white">What&apos;s your idea?</h2>
+        <p className="text-[11px] text-white/50">
           Type or speak your idea to start brainstorming
         </p>
       </div>
 
       {/* Text input area */}
-      <div className="w-full max-w-md space-y-3">
+      <div className="w-full max-w-md space-y-2">
         <Textarea
           value={idea}
           onChange={(e) => setIdea(e.target.value)}
           placeholder="I want to build..."
-          rows={6}
-          className="bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 resize-none focus-visible:border-amber-500/50 focus-visible:ring-amber-500/20"
+          rows={3}
+          className="bg-white/5 border-white/10 text-white/90 text-sm placeholder:text-white/25 resize-none focus-visible:border-amber-500/50 focus-visible:ring-amber-500/20"
           disabled={isAnalyzing}
         />
 
         {/* Voice input row */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={isRecordingLocal ? stopVoiceRecording : startVoiceRecording}
-            className={`size-12 rounded-full flex items-center justify-center transition-all shadow-lg shrink-0 ${
+            className={`size-9 rounded-full flex items-center justify-center transition-all shadow-lg shrink-0 ${
               isRecordingLocal
                 ? 'bg-red-500 hover:bg-red-400 shadow-red-500/30 animate-pulse'
                 : 'bg-red-500/80 hover:bg-red-400 shadow-red-500/20'
@@ -337,25 +337,25 @@ export function SparkTab() {
             disabled={isAnalyzing || isTranscribing}
           >
             {isRecordingLocal ? (
-              <MicOff className="size-5 text-white" />
+              <MicOff className="size-4 text-white" />
             ) : (
-              <Mic className="size-5 text-white" />
+              <Mic className="size-4 text-white" />
             )}
           </button>
 
           <div className="flex-1">
             {isRecordingLocal ? (
-              <div className="space-y-1">
-                <p className="text-xs text-red-400 font-medium">Recording...</p>
+              <div className="space-y-0.5">
+                <p className="text-[10px] text-red-400 font-medium">Recording...</p>
                 <WaveformBars isActive />
               </div>
             ) : isTranscribing ? (
               <div className="flex items-center gap-2">
-                <Loader2 className="size-4 text-amber-400 animate-spin" />
-                <span className="text-xs text-white/50">Transcribing...</span>
+                <Loader2 className="size-3 text-amber-400 animate-spin" />
+                <span className="text-[10px] text-white/50">Transcribing...</span>
               </div>
             ) : (
-              <p className="text-xs text-white/30">Tap mic to speak your idea</p>
+              <p className="text-[10px] text-white/30">Tap mic to speak your idea</p>
             )}
           </div>
         </div>
@@ -364,17 +364,16 @@ export function SparkTab() {
         <Button
           onClick={handleSparkIt}
           disabled={isIdeaEmpty || isAnalyzing}
-          className="w-full h-12 text-base font-semibold bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-40 disabled:cursor-not-allowed"
-          size="lg"
+          className="w-full h-9 text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isAnalyzing ? (
             <>
-              <Loader2 className="size-5 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
               Analyzing...
             </>
           ) : (
             <>
-              <Sparkles className="size-5" />
+              <Sparkles className="size-4" />
               Spark It
             </>
           )}
@@ -384,9 +383,9 @@ export function SparkTab() {
       {/* New Idea link */}
       <button
         onClick={handleNewIdea}
-        className="text-xs text-white/30 hover:text-white/60 transition-colors flex items-center gap-1 mt-auto"
+        className="text-[10px] text-white/30 hover:text-white/60 transition-colors flex items-center gap-1 mt-auto"
       >
-        <RotateCcw className="size-3" />
+        <RotateCcw className="size-2.5" />
         New Idea
       </button>
 

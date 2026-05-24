@@ -367,10 +367,10 @@ export function ChatTab() {
   return (
     <div className="flex flex-col h-full">
       {/* ── Top: Progress indicator ── */}
-      <div className="px-4 pt-3 pb-2 space-y-2 border-b border-white/10 shrink-0">
+      <div className="px-3 pt-2 pb-1.5 space-y-1 border-b border-white/10 shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-white/70">
-            Question {Math.min(currentQuestionIndex + 1, settings.questionCount)} of {settings.questionCount}
+          <span className="text-[11px] font-medium text-white/70">
+            Q {Math.min(currentQuestionIndex + 1, settings.questionCount)}/{settings.questionCount}
           </span>
           <div className="flex items-center gap-1.5">
             {settings.researchMode && (
@@ -397,15 +397,15 @@ export function ChatTab() {
       </div>
 
       {/* ── Middle: Messages ── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
         {messages.length === 0 && !isChatLoading && (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-            <div className="size-12 rounded-full bg-amber-500/10 flex items-center justify-center">
-              <MessageCircle className="size-6 text-amber-400" />
+          <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+            <div className="size-9 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <MessageCircle className="size-4 text-amber-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white/70">Ready to brainstorm</p>
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-xs font-medium text-white/70">Ready to brainstorm</p>
+              <p className="text-[10px] text-white/40 mt-0.5">
                 {idea
                   ? 'The AI will start asking you questions about your idea'
                   : 'Enter your idea in the Spark tab first'}
@@ -420,7 +420,7 @@ export function ChatTab() {
             className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+              className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-amber-500 text-black rounded-br-md'
                   : 'bg-white/10 text-white/90 rounded-bl-md'
@@ -479,30 +479,30 @@ export function ChatTab() {
       </div>
 
       {/* ── Bottom: Input area ── */}
-      <div className="border-t border-white/10 p-3 shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="border-t border-white/10 p-2 shrink-0">
+        <div className="flex items-center gap-1.5">
           {/* Microphone / recording button */}
           {isRecording ? (
             <button
               onClick={handleTranscribe}
-              className="flex size-9 items-center justify-center rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors shrink-0"
+              className="flex size-7 items-center justify-center rounded-md bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors shrink-0"
               aria-label="Stop recording"
               disabled={isTranscribing}
             >
               {isTranscribing ? (
-                <Loader2 className="size-4 animate-spin" />
+                <Loader2 className="size-3 animate-spin" />
               ) : (
-                <MicOff className="size-4" />
+                <MicOff className="size-3" />
               )}
             </button>
           ) : (
             <button
               onClick={startRecording}
-              className="flex size-9 items-center justify-center rounded-lg text-white/40 hover:text-amber-400 hover:bg-white/5 transition-colors shrink-0"
+              className="flex size-7 items-center justify-center rounded-md text-white/40 hover:text-amber-400 hover:bg-white/5 transition-colors shrink-0"
               aria-label="Start voice recording"
               disabled={isChatLoading || isTranscribing}
             >
-              <Mic className="size-4" />
+              <Mic className="size-3" />
             </button>
           )}
 
@@ -523,7 +523,7 @@ export function ChatTab() {
                   : 'Type your answer...'
             }
             disabled={isChatLoading || isRecording || isTranscribing || qaComplete}
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-colors disabled:opacity-50"
+            className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-xs text-white/90 placeholder:text-white/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-colors disabled:opacity-50"
           />
 
           {/* Send button */}
@@ -531,15 +531,15 @@ export function ChatTab() {
             onClick={handleSend}
             disabled={isChatLoading || !input.trim() || qaComplete}
             size="icon"
-            className="size-9 rounded-lg bg-amber-500 hover:bg-amber-400 text-black shrink-0"
+            className="size-7 rounded-md bg-amber-500 hover:bg-amber-400 text-black shrink-0"
           >
-            <Send className="size-4" />
+            <Send className="size-3" />
           </Button>
 
           {/* TTS toggle */}
           <button
             onClick={handleToggleTTS}
-            className={`flex size-9 items-center justify-center rounded-lg transition-colors shrink-0 ${
+            className={`flex size-7 items-center justify-center rounded-md transition-colors shrink-0 ${
               settings.ttsEnabled
                 ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
                 : 'text-white/30 hover:text-white/60 hover:bg-white/5'
@@ -547,9 +547,9 @@ export function ChatTab() {
             aria-label={settings.ttsEnabled ? 'Disable voice output' : 'Enable voice output'}
           >
             {settings.ttsEnabled ? (
-              <Volume2 className="size-4" />
+              <Volume2 className="size-3" />
             ) : (
-              <VolumeX className="size-4" />
+              <VolumeX className="size-3" />
             )}
           </button>
         </div>
