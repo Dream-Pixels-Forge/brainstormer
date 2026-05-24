@@ -47,17 +47,7 @@ const CLOUD_MODELS: { value: CloudModel; label: string; provider: string }[] = [
   { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', provider: 'Google' },
 ]
 
-const LOCAL_MODELS: { value: LocalModel; label: string }[] = [
-  { value: 'llama3.1', label: 'Llama 3.1 8B' },
-  { value: 'llama3.1:70b', label: 'Llama 3.1 70B' },
-  { value: 'mistral', label: 'Mistral 7B' },
-  { value: 'codellama', label: 'Code Llama' },
-  { value: 'phi3', label: 'Phi-3 Mini' },
-  { value: 'qwen2.5', label: 'Qwen 2.5' },
-  { value: 'deepseek-coder', label: 'DeepSeek Coder' },
-  { value: 'gemma2', label: 'Gemma 2' },
-  { value: 'custom', label: 'Custom...' },
-]
+const CUSTOM_VALUE = '__custom__'
 
 export function SettingsTab() {
   const {
@@ -72,18 +62,74 @@ export function SettingsTab() {
   const [showCloudKey, setShowCloudKey] = useState(false)
   const [showLocalKey, setShowLocalKey] = useState(false)
 
-  // ── Handlers ──
+  // ── Dynamic Ollama models ──
+  const [ollamaModels, setOllamaModels] = useState<string[]>([])
+  const [isLoadingModels, setIsLoadingModels] = useState(false)
+  const [ollamaError, setOllamaError] = useState<string | null>(null)
 
+  const fetchOllamaModels = useCallback(async (endpoint: string) => {
+    setIsLoadingModels(true)
+    setOllamaError(null)
+    try {
+      const res = await fetch(`/api/ollama/models?endpoint=${encodeURIComponent(endpoint)}`)
+      const data = await res.json()
+      if (data.error) {
+        setOllamaError(data.error)
+        setOllamaModels([])
+      } else {
+        setOllamaModels(data.models || [])
+        setOllamaError(null)
+      }
+    } catch {
+      setOllamaError('Failed to fetch models')
+      setOllamaModels([])
+    } finally {
+      setIsLoadingModels(false)
+    }
+  }, [])
+
+  // Fetch models when local mode is active or endpoint changes
+  const handleLocalEndpointChange = (value: string) => {
+    setSettings({ localEndpoint: value })
+    // Debounce: fetch after user stops typing (simple approach)
+  }
+
+  const handleRefreshModels = () => {
+    fetchOllamaModels(settings.localEndpoint)
+  }
+
+  // Auto-fetch when switching to local mode
   const handleLLMModelChange = (value: string) => {
     setSettings({ llmModel: value as LLMModel })
+    if (value === 'local' && ollamaModels.length === 0) {
+      fetchOllamaModels(settings.localEndpoint)
+    }
   }
+
+  // Resolve the dropdown value: if model is a custom name not in ollamaModels, show as custom
+  const localDropdownValue = (() => {
+    if (!settings.localModel) return ''
+    if (settings.localModel === CUSTOM_VALUE) return CUSTOM_VALUE
+    if (ollamaModels.includes(settings.localModel)) return settings.localModel
+    // If we have models loaded and current selection isn't among them → custom
+    if (ollamaModels.length > 0) return CUSTOM_VALUE
+    // No models loaded yet → show as-is (might be from persisted state)
+    return settings.localModel
+  })()
+
+  // ── Handlers ──
 
   const handleCloudModelChange = (value: string) => {
     setSettings({ cloudModel: value as CloudModel })
   }
 
   const handleLocalModelChange = (value: string) => {
-    setSettings({ localModel: value as LocalModel })
+    if (value === CUSTOM_VALUE) {
+      // Switch to custom mode — keep existing custom model name if any
+      setSettings({ localModel: settings.localCustomModel || '' })
+    } else {
+      setSettings({ localModel: value })
+    }
   }
 
   const handleQuestionCountChange = (value: number[]) => {
@@ -203,7 +249,7 @@ export function SettingsTab() {
         cloudApiKey: '',
         cloudModel: 'claude-sonnet-4-20250514',
         localApiKey: '',
-        localModel: 'llama3.1',
+        localModel: '',
         localEndpoint: 'http://localhost:11434',
         localCustomModel: '',
         questionCount: 5,
@@ -220,6 +266,8 @@ export function SettingsTab() {
       },
     })
     setTagsInput('')
+    setOllamaModels([])
+    setOllamaError(null)
     resetWorkflow()
     toast.success('All settings reset to defaults')
   }
@@ -229,10 +277,10 @@ export function SettingsTab() {
     if (settings.llmModel === 'cloud') {
       return CLOUD_MODELS.find(m => m.value === settings.cloudModel)?.label ?? settings.cloudModel
     }
-    if (settings.localModel === 'custom') {
-      return settings.localCustomModel || 'Custom'
+    if (localDropdownValue === CUSTOM_VALUE && settings.localCustomModel) {
+      return settings.localCustomModel
     }
-    return LOCAL_MODELS.find(m => m.value === settings.localModel)?.label ?? settings.localModel
+    return settings.localModel || 'No model selected'
   }
 
   // ── Render ──
@@ -329,50 +377,94 @@ export function SettingsTab() {
           {/* ── Local settings (shown when local selected) ── */}
           {settings.llmModel === 'local' && (
             <div className="space-y-2">
-              {/* Local model dropdown */}
-              <div className="space-y-1">
-                <Label className="text-[10px] text-white/50 uppercase tracking-wider">Model</Label>
-                <Select value={settings.localModel} onValueChange={handleLocalModelChange}>
-                  <SelectTrigger className="bg-white/5 border-white/10 text-white/90 text-xs h-8 focus:border-amber-500/50 focus:ring-amber-500/30">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-white/10">
-                    {LOCAL_MODELS.map((model) => (
-                      <SelectItem key={model.value} value={model.value} className="text-xs text-white/80 focus:bg-white/10 focus:text-white">
-                        {model.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Custom model name (when custom selected) */}
-              {settings.localModel === 'custom' && (
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-white/50 uppercase tracking-wider">Custom Model Name</Label>
-                  <Input
-                    value={settings.localCustomModel}
-                    onChange={(e) => setSettings({ localCustomModel: e.target.value })}
-                    placeholder="my-model:latest"
-                    className="bg-white/5 border-white/10 text-white/90 text-xs h-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
-                  />
-                </div>
-              )}
-
-              {/* Local endpoint */}
+              {/* Local endpoint (shown first so models can be fetched) */}
               <div className="space-y-1">
                 <Label className="text-[10px] text-white/50 uppercase tracking-wider flex items-center gap-1">
                   <Server className="size-2.5" />
                   Endpoint
                 </Label>
-                <Input
-                  value={settings.localEndpoint}
-                  onChange={(e) => setSettings({ localEndpoint: e.target.value })}
-                  placeholder="http://localhost:11434"
-                  className="bg-white/5 border-white/10 text-white/90 text-xs h-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
-                />
+                <div className="flex gap-1.5">
+                  <Input
+                    value={settings.localEndpoint}
+                    onChange={(e) => handleLocalEndpointChange(e.target.value)}
+                    placeholder="http://localhost:11434"
+                    className="flex-1 bg-white/5 border-white/10 text-white/90 text-xs h-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefreshModels}
+                    disabled={isLoadingModels}
+                    className="shrink-0 border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white h-8 px-2"
+                  >
+                    <RotateCcw className={`size-3.5 ${isLoadingModels ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
                 <p className="text-[9px] text-white/25">Ollama default: http://localhost:11434</p>
               </div>
+
+              {/* Local model dropdown (dynamic from Ollama) */}
+              <div className="space-y-1">
+                <Label className="text-[10px] text-white/50 uppercase tracking-wider">Model</Label>
+                {ollamaError && (
+                  <p className="text-[9px] text-red-400/70 flex items-center gap-1">
+                    <span>⚠ {ollamaError}</span>
+                  </p>
+                )}
+                {isLoadingModels ? (
+                  <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-md h-8 px-3">
+                    <RotateCcw className="size-3 animate-spin text-white/40" />
+                    <span className="text-xs text-white/40">Loading models...</span>
+                  </div>
+                ) : ollamaModels.length > 0 ? (
+                  <Select value={localDropdownValue} onValueChange={handleLocalModelChange}>
+                    <SelectTrigger className="bg-white/5 border-white/10 text-white/90 text-xs h-8 focus:border-amber-500/50 focus:ring-amber-500/30">
+                      <SelectValue placeholder="Select a model..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-800 border-white/10 max-h-48">
+                      {ollamaModels.map((model) => (
+                        <SelectItem key={model} value={model} className="text-xs text-white/80 focus:bg-white/10 focus:text-white">
+                          <div className="flex items-center gap-1.5">
+                            <Monitor className="size-3 text-emerald-400/60" />
+                            <span>{model}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={CUSTOM_VALUE} className="text-xs text-amber-400/80 focus:bg-white/10 focus:text-amber-400">
+                        <div className="flex items-center gap-1.5">
+                          <span>✏️</span>
+                          <span>Custom...</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Input
+                      value={settings.localModel}
+                      onChange={(e) => setSettings({ localModel: e.target.value })}
+                      placeholder="Model name (e.g. llama3.1)"
+                      className="bg-white/5 border-white/10 text-white/90 text-xs h-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
+                    />
+                    <p className="text-[9px] text-white/25">Click ↻ to fetch models from your Ollama server</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Custom model name (when custom selected from dropdown) */}
+              {ollamaModels.length > 0 && localDropdownValue === CUSTOM_VALUE && (
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-white/50 uppercase tracking-wider">Custom Model Name</Label>
+                  <Input
+                    value={settings.localCustomModel}
+                    onChange={(e) => {
+                      setSettings({ localCustomModel: e.target.value, localModel: e.target.value })
+                    }}
+                    placeholder="my-model:latest"
+                    className="bg-white/5 border-white/10 text-white/90 text-xs h-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
+                  />
+                </div>
+              )}
 
               {/* Local API key (optional) */}
               <div className="space-y-1">

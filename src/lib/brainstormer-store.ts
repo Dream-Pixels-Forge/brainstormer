@@ -11,7 +11,7 @@ export type LLMModel = 'cloud' | 'local'
 export type TTSEngine = 'kokoro' | 'browser'
 
 export type CloudModel = 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514' | 'claude-haiku-4-20250514' | 'gpt-4o' | 'gpt-4o-mini' | 'gemini-2.0-flash'
-export type LocalModel = 'llama3.1' | 'llama3.1:70b' | 'mistral' | 'codellama' | 'phi3' | 'qwen2.5' | 'deepseek-coder' | 'gemma2' | 'custom'
+export type LocalModel = string
 
 export interface ChatMessage {
   id: string
@@ -146,7 +146,7 @@ const defaultSettings: Settings = {
   cloudApiKey: '',
   cloudModel: 'claude-sonnet-4-20250514',
   localApiKey: '',
-  localModel: 'llama3.1',
+  localModel: '',
   localEndpoint: 'http://localhost:11434',
   localCustomModel: '',
   questionCount: 5,
