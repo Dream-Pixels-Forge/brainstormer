@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brainstormer — AI-Powered Brainstorming Widget</title>
+  <meta name="description" content="Desktop widget for AI-powered brainstorming. Speak your idea, explore through structured Q&A, and export project files. Ctrl+Shift+B to launch." />
+  <meta property="og:title" content="Brainstormer — AI-Powered Brainstorming Widget" />
+  <meta property="og:description" content="Desktop widget for AI-powered brainstorming. Speak your idea, explore through structured Q&A, and export project files." />
+  <meta property="og:image" content="images/og-image.png" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/png" href="src-tauri/icons/icon.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            brain: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' },
+          },
+        },
+      },
+    }
+  </script>
+  <!-- ═══════════════════════════════════════════════
+       WAITLIST FORM CONFIG
+       Set WAITLIST_URL to your endpoint.
+       Examples:
+       - Formspree:  https://formspree.io/f/xxxxx
+       - Netlify:    / (action attribute on form works natively)
+       - Mailto:     mailto:you@example.com?subject=Brainstormer%20Waitlist
+       ═══════════════════════════════════════════════ -->
+  <style>
+    :root { --amber: #f59e0b; }
+    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+    .glow-amber { box-shadow: 0 0 40px rgba(245, 158, 11, 0.08), 0 0 80px rgba(245, 158, 11, 0.04); }
+    .glow-amber-sm { box-shadow: 0 0 20px rgba(245, 158, 11, 0.1); }
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    @keyframes widget-glow {
+      0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.15), 0 25px 50px -12px rgba(0,0,0,0.5); }
+      50% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3), 0 25px 50px -12px rgba(0,0,0,0.5), 0 0 30px rgba(245, 158, 11, 0.06); }
+    }
+    .widget-glow { animation: widget-glow 4s ease-in-out infinite; }
+    @keyframes ping-slow { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.15); opacity: 0.2; } }
+    .ping-slow { animation: ping-slow 3s ease-in-out infinite; }
+    @keyframes fade-in-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in-up { animation: fade-in-up 0.4s ease-out; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-white/90 font-sans antialiased overflow-x-hidden">
+
+  <!-- ═══ HERO ═══ -->
+  <section class="relative min-h-screen flex items-center justify-center px-4 py-16 md:py-0">
+    <!-- Ambient glow -->
+    <div class="absolute inset-0 flex items-start justify-center pointer-events-none">
+      <div class="w-[600px] h-[600px] rounded-full bg-amber-500/5 blur-[120px] translate-y-[-120px]"></div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+
+      <!-- ── Widget Mockup (CSS) ── -->
+      <div class="w-full max-w-[420px] shrink-0 reveal">
+        <div class="widget-glow rounded-2xl border border-white/10 bg-zinc-900/95 backdrop-blur-xl overflow-hidden">
+          <!-- Title bar -->
+          <div class="flex items-center gap-2 px-3 py-2 border-b border-white/10 select-none">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5">
+                <path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/>
+                <path d="M9 22h6" stroke-width="2"/><path d="M12 22v-3"/>
+              </svg>
+              <span class="text-xs font-semibold text-white/80 tracking-wide">Brainstormer</span>
+              <span class="text-[9px] text-amber-500/60 font-medium">New Idea</span>
+            </div>
+            <div class="flex items-center gap-0.5">
+              <div class="size-4 flex items-center justify-center rounded text-white/30 hover:text-white/60 cursor-default"><svg class="size-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg></div>
+              <div class="size-4 flex items-center justify-center rounded text-white/30 hover:text-white/60 cursor-default"><svg class="size-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></div>
+              <div class="size-4 flex items-center justify-center rounded text-white/30 hover:text-white/60 cursor-default"><svg class="size-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6l-12 12"/></svg></div>
+            </div>
+          </div>
+
+          <!-- Tab bar -->
+          <div class="flex border-b border-white/10 px-1">
+            <div class="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] font-medium text-amber-500 relative">
+              <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5 5 2 7-7-4-7 4 2-7-5-5h7z"/></svg>
+              <span>Spark</span>
+              <div class="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-amber-500"></div>
+            </div>
+            <div class="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] font-medium text-white/40"><svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat</span></div>
+            <div class="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] font-medium text-white/40"><svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Export</span></div>
+            <div class="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] font-medium text-white/40"><svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></div>
+          </div>
+
+          <!-- Content — Spark tab simplified -->
+          <div class="flex flex-col items-center p-4 gap-3 min-h-[200px]">
+            <div class="relative">
+              <div class="absolute inset-0 rounded-full bg-amber-500/20 blur-xl scale-150"></div>
+              <svg class="size-8 text-amber-500 relative" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/>
+                <path d="M9 22h6" stroke-width="2"/><path d="M12 22v-3"/>
+              </svg>
+            </div>
+            <div class="text-center space-y-0.5">
+              <p class="text-sm font-bold text-white">What&apos;s your idea?</p>
+              <p class="text-[10px] text-white/50">Type or speak to start brainstorming</p>
+            </div>
+            <div class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white/30">I want to build...</div>
+            <div class="flex items-center gap-3">
+              <div class="size-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/30 flex items-center justify-center">
+                <svg class="size-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </div>
+              <div class="size-9 rounded-lg bg-amber-500 shadow-md shadow-amber-500/20 flex items-center justify-center">
+                <svg class="size-4 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5 5 2 7-7-4-7 4 2-7-5-5h7z"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status bar -->
+          <div class="flex items-center justify-between px-3 py-1.5 border-t border-white/5">
+            <div class="flex items-center gap-1.5">
+              <div class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span class="text-[8px] text-white/30">Desktop · AI Ready</span>
+            </div>
+            <span class="text-[8px] text-white/20">^B</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Hero Text + Waitlist ── -->
+      <div class="flex-1 max-w-lg reveal" style="transition-delay: 0.15s">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 font-medium mb-4">
+          <span class="size-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+          v0.1.0 — Early Access
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
+          Your ideas,<br />
+          <span class="text-amber-500">amplified by AI.</span>
+        </h1>
+
+        <p class="mt-4 text-sm sm:text-base text-white/50 leading-relaxed max-w-md">
+          Brainstormer is a desktop widget for the creative flow. Speak your idea,
+          explore it through structured Q&A, and export a full project scaffold.
+          No tabs, no windows — just <span class="text-white/70">Ctrl+Shift+B</span>.
+        </p>
+
+        <!-- Waitlist form -->
+        <div class="mt-8 space-y-3" id="waitlist-hero">
+          <form id="waitlist-form" class="flex flex-col sm:flex-row gap-2">
+            <label for="email-input" class="sr-only">Email address</label>
+            <input
+              id="email-input"
+              type="email"
+              required
+              placeholder="you@example.com"
+              autocomplete="email"
+              class="flex-1 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-colors"
+            />
+            <button
+              type="submit"
+              class="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold transition-all hover:shadow-lg hover:shadow-amber-500/25 active:scale-[0.98]"
+            >
+              Get Early Access
+            </button>
+          </form>
+          <div id="waitlist-confirm" class="hidden fade-in-up">
+            <div class="flex items-center gap-2 text-emerald-400 text-sm">
+              <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>You&apos;re on the list! We&apos;ll notify you when Brainstormer is ready.</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-white/25">No spam. Unsubscribe anytime.</p>
+        </div>
+
+        <!-- Download + OS badges -->
+        <div class="mt-6 pt-6 border-t border-white/5">
+          <p class="text-[11px] text-white/40 mb-3">Or download the preview build:</p>
+          <div class="flex flex-wrap gap-2" id="download-badges">
+            <a href="#" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors" data-os="linux">Linux (.deb)</a>
+            <a href="#" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors" data-os="macos">macOS (.dmg)</a>
+            <a href="#" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors" data-os="windows">Windows (.msi)</a>
+            <a href="https://github.com/dimonapatrick/brainstormer" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+              <svg class="size-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+              Source
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/20">
+      <span class="text-[10px]">See how it works</span>
+      <svg class="size-4 animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
+    </div>
+  </section>
+
+  <!-- ═══ FEATURES ═══ -->
+  <section class="relative px-4 py-24 md:py-32">
+    <div class="max-w-5xl mx-auto space-y-32">
+
+      <!-- Feature 1: Spark -->
+      <div class="reveal flex flex-col md:flex-row items-center gap-8 md:gap-16">
+        <div class="flex-1 order-2 md:order-1">
+          <span class="text-[10px] font-semibold text-amber-500/70 uppercase tracking-widest">01 — Input</span>
+          <h2 class="mt-2 text-2xl md:text-3xl font-bold text-white">Spark</h2>
+          <p class="mt-3 text-sm text-white/50 leading-relaxed">Speak your idea or type it in. Real-time voice transcription captures your thoughts as they come — no formatting, no friction. Hit Spark and the AI breaks it down.</p>
+        </div>
+        <div class="flex-1 order-1 md:order-2">
+          <img src="dev_notes/screenshot-widget-v2.png" alt="Spark tab" class="w-full max-w-sm rounded-xl border border-white/10 shadow-2xl" loading="lazy" />
+        </div>
+      </div>
+
+      <!-- Feature 2: Chat -->
+      <div class="reveal flex flex-col md:flex-row items-center gap-8 md:gap-16">
+        <div class="flex-1">
+          <img src="dev_notes/screenshot-chat.png" alt="Chat tab" class="w-full max-w-sm rounded-xl border border-white/10 shadow-2xl" loading="lazy" />
+        </div>
+        <div class="flex-1">
+          <span class="text-[10px] font-semibold text-amber-500/70 uppercase tracking-widest">02 — Explore</span>
+          <h2 class="mt-2 text-2xl md:text-3xl font-bold text-white">Brainstorm</h2>
+          <p class="mt-3 text-sm text-white/50 leading-relaxed">The AI asks one question at a time — building deep context as you answer. Configurable depth, research mode, and voice I/O keep the session flowing naturally.</p>
+        </div>
+      </div>
+
+      <!-- Feature 3: Export -->
+      <div class="reveal flex flex-col md:flex-row items-center gap-8 md:gap-16">
+        <div class="flex-1 order-2 md:order-1">
+          <span class="text-[10px] font-semibold text-amber-500/70 uppercase tracking-widest">03 — Deliver</span>
+          <h2 class="mt-2 text-2xl md:text-3xl font-bold text-white">Export</h2>
+          <p class="mt-3 text-sm text-white/50 leading-relaxed">From your Q&A session, Brainstormer generates 8 project files: idea brief, tasks, roadmap, architecture, design decisions, agent configs, and more. Ready to drop into any project.</p>
+        </div>
+        <div class="flex-1 order-1 md:order-2">
+          <img src="dev_notes/screenshot-export.png" alt="Export tab" class="w-full max-w-sm rounded-xl border border-white/10 shadow-2xl" loading="lazy" />
+        </div>
+      </div>
+
+      <!-- Feature 4: Desktop Native -->
+      <div class="reveal flex flex-col md:flex-row items-center gap-8 md:gap-16">
+        <div class="flex-1">
+          <img src="dev_notes/screenshot-widget-open.png" alt="Desktop widget" class="w-full max-w-sm rounded-xl border border-white/10 shadow-2xl" loading="lazy" />
+        </div>
+        <div class="flex-1">
+          <span class="text-[10px] font-semibold text-amber-500/70 uppercase tracking-widest">04 — Native</span>
+          <h2 class="mt-2 text-2xl md:text-3xl font-bold text-white">Desktop Native</h2>
+          <p class="mt-3 text-sm text-white/50 leading-relaxed">Built with Tauri 2 — a lightweight, cross-platform shell. Frameless window, system tray, global shortcut. It stays out of your way until you need it. <span class="text-white/70">Ctrl+Shift+B</span> toggles it from anywhere.</p>
+          <div class="mt-4 flex items-center gap-3 text-[11px]">
+            <span class="text-white/30">Platforms:</span>
+            <span class="text-white/50">Linux</span>
+            <span class="text-white/30">·</span>
+            <span class="text-white/50">macOS</span>
+            <span class="text-white/30">·</span>
+            <span class="text-white/50">Windows</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ WAITLIST CTA #2 ═══ -->
+  <section class="relative px-4 py-24 md:py-32">
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div class="w-[500px] h-[500px] rounded-full bg-amber-500/[0.03] blur-[120px]"></div>
+    </div>
+
+    <div class="relative z-10 max-w-2xl mx-auto text-center reveal">
+      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 font-medium mb-6">
+        <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Limited Early Access
+      </div>
+
+      <h2 class="text-2xl md:text-4xl font-bold text-white">
+        Ready to brainstorm?
+      </h2>
+      <p class="mt-3 text-sm text-white/50 max-w-md mx-auto">
+        Join the waitlist and be the first to know when Brainstormer launches.
+        Early adopters get priority access and exclusive updates.
+      </p>
+
+      <form id="waitlist-form-2" class="mt-8 flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+        <label for="email-input-2" class="sr-only">Email address</label>
+        <input
+          id="email-input-2"
+          type="email"
+          required
+          placeholder="you@example.com"
+          autocomplete="email"
+          class="flex-1 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-colors"
+        />
+        <button
+          type="submit"
+          class="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold transition-all hover:shadow-lg hover:shadow-amber-500/25 active:scale-[0.98]"
+        >
+          Join the Waitlist
+        </button>
+      </form>
+      <div id="waitlist-confirm-2" class="hidden mt-4 fade-in-up">
+        <div class="flex items-center justify-center gap-2 text-emerald-400 text-sm">
+          <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>You&apos;re on the list!</span>
+        </div>
+      </div>
+      <p class="mt-3 text-[11px] text-white/25">No spam. Unsubscribe anytime.</p>
+    </div>
+  </section>
+
+  <!-- ═══ BOTTOM ═══ -->
+  <footer class="border-t border-white/5 px-4 py-12 md:py-16">
+    <div class="max-w-3xl mx-auto text-center space-y-8">
+
+      <!-- Keyboard shortcut -->
+      <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs text-white/40">
+        <span class="text-white/60 font-mono">Ctrl</span>
+        <span class="text-white/20">+</span>
+        <span class="text-white/60 font-mono">Shift</span>
+        <span class="text-white/20">+</span>
+        <span class="text-white-60 font-mono text-amber-500">B</span>
+        <span class="text-white/30 ml-1">— toggle from anywhere</span>
+      </div>
+
+      <!-- System requirements -->
+      <div class="text-xs text-white/30 space-y-1">
+        <p class="font-medium text-white/40 text-[11px] uppercase tracking-wider">System Requirements</p>
+        <p>Windows 10+ · macOS 12+ · Linux with WebKit2GTK 4.1</p>
+        <p>~10MB disk · 4GB RAM recommended</p>
+      </div>
+
+      <!-- Divider -->
+      <div class="w-12 h-px bg-white/10 mx-auto"></div>
+
+      <!-- Build from source -->
+      <p class="text-xs text-white/30">
+        Developer? <a href="https://github.com/dimonapatrick/brainstormer" class="text-amber-500/70 hover:text-amber-400 transition-colors underline underline-offset-2">Build from source</a>
+        <span class="text-white/20 mx-2">·</span>
+        <span>pnpm install &amp;&amp; pnpm tauri:build</span>
+      </p>
+
+      <!-- Copyright -->
+      <p class="text-[11px] text-white/20">Brainstormer · MIT License</p>
+    </div>
+  </footer>
+
+  <!-- ═══ JS ═══ -->
+  <script>
+    // ── Waitlist form handler ──
+    const WAITLIST_URL = '' // ← Set your endpoint URL here
+
+    async function handleSubmit(formId, inputId, confirmId) {
+      const form = document.getElementById(formId)
+      const input = document.getElementById(inputId)
+      const confirm = document.getElementById(confirmId)
+      if (!form || !input || !confirm) return
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const email = input.value.trim()
+        if (!email) return
+
+        // Optimistic confirmation
+        input.disabled = true
+        form.querySelector('button[type="submit"]').disabled = true
+        form.classList.add('hidden')
+        confirm.classList.remove('hidden')
+
+        // Submit if endpoint configured
+        if (WAITLIST_URL) {
+          try {
+            await fetch(WAITLIST_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email }),
+            })
+          } catch { /* silent — optimistic UI already shown */ }
+        }
+      })
+    }
+
+    handleSubmit('waitlist-form', 'email-input', 'waitlist-confirm')
+    handleSubmit('waitlist-form-2', 'email-input-2', 'waitlist-confirm-2')
+
+    // ── OS detection for download badges ──
+    ;(function detectOS() {
+      const ua = navigator.userAgent
+      let os = ''
+      if (ua.includes('Mac')) os = 'macos'
+      else if (ua.includes('Win')) os = 'windows'
+      else if (ua.includes('Linux')) os = 'linux'
+
+      document.querySelectorAll('[data-os]').forEach(el => {
+        if (el.dataset.os === os) {
+          el.classList.remove('text-white/60', 'border-white/10', 'bg-white/5')
+          el.classList.add('text-amber-400', 'border-amber-500/30', 'bg-amber-500/10')
+        }
+      })
+    })()
+
+    // ── Scroll reveal ──
+    ;(function scrollReveal() {
+      if (!('IntersectionObserver' in window)) return
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible')
+            observer.unobserve(entry.target)
+          }
+        })
+      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
+
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+    })()
+
+    // ── Smooth scroll for anchor links ──
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a[href^="#"]')
+      if (!link) return
+      e.preventDefault()
+      const target = document.querySelector(link.getAttribute('href'))
+      if (target) target.scrollIntoView({ behavior: 'smooth' })
+    })
+  </script>
+</body>
+</html>

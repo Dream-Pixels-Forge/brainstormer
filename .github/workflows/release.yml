@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-24.04
+            target: linux
+            bundle: "deb,appimage"
+          - platform: macos-latest
+            target: macos
+            bundle: "dmg"
+          - platform: windows-latest
+            target: windows
+            bundle: "msi"
+
+    runs-on: ${{ matrix.platform }}
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Node dependencies
+        run: bun install
+
+      - name: Generate Prisma client
+        run: bun run db:generate
+
+      - name: Build Next.js
+        run: bun run build
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libxdo-dev
+
+      - name: Build Tauri binary
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Brainstormer ${{ github.ref_name }}"
+          releaseBody: |
+            ## Download
+
+            | Platform | Download |
+            |----------|----------|
+            | **Linux** | `brainstormer_${{ github.ref_name }}_amd64.deb` or `brainstormer_${{ github.ref_name }}_amd64.AppImage` |
+            | **macOS** | `brainstormer_${{ github.ref_name }}_x64.dmg` |
+            | **Windows** | `brainstormer_${{ github.ref_name }}_x64.msi` |
+
+            ## Usage
+
+            - **Linux**: `sudo dpkg -i brainstormer_*.deb` or chmod +x the AppImage and run
+            - **macOS**: Open the .dmg and drag to Applications
+            - **Windows**: Run the .msi installer
+
+            Press **Ctrl+Shift+B** to toggle the widget.
+          releaseDraft: true
+          prerelease: false
+          args: --bundles ${{ matrix.bundle }}
