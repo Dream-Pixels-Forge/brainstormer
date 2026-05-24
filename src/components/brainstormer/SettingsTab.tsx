@@ -2,11 +2,11 @@
 
 import { useState, useCallback } from 'react'
 import {
-  Cloud, Monitor, FlaskConical, Volume2, Globe, Mic,
+  Cloud, Monitor, FlaskConical, Volume2,
   Github, Link, Tag, FileText, Trash2, RotateCcw,
-  Database, Plug, TestTube,
+  Database, Plug, TestTube, Key, Eye, EyeOff, Server,
 } from 'lucide-react'
-import { useBrainstormerStore, type LLMModel, type TTSEngine } from '@/lib/brainstormer-store'
+import { useBrainstormerStore, type LLMModel, type TTSEngine, type CloudModel, type LocalModel } from '@/lib/brainstormer-store'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
@@ -16,6 +16,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +36,29 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 
+// ── Model options ──────────────────────────────────────────
+
+const CLOUD_MODELS: { value: CloudModel; label: string; provider: string }[] = [
+  { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', provider: 'Anthropic' },
+  { value: 'claude-opus-4-20250514', label: 'Claude Opus 4', provider: 'Anthropic' },
+  { value: 'claude-haiku-4-20250514', label: 'Claude Haiku 4', provider: 'Anthropic' },
+  { value: 'gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI' },
+  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', provider: 'Google' },
+]
+
+const LOCAL_MODELS: { value: LocalModel; label: string }[] = [
+  { value: 'llama3.1', label: 'Llama 3.1 8B' },
+  { value: 'llama3.1:70b', label: 'Llama 3.1 70B' },
+  { value: 'mistral', label: 'Mistral 7B' },
+  { value: 'codellama', label: 'Code Llama' },
+  { value: 'phi3', label: 'Phi-3 Mini' },
+  { value: 'qwen2.5', label: 'Qwen 2.5' },
+  { value: 'deepseek-coder', label: 'DeepSeek Coder' },
+  { value: 'gemma2', label: 'Gemma 2' },
+  { value: 'custom', label: 'Custom...' },
+]
+
 export function SettingsTab() {
   const {
     settings,
@@ -39,11 +69,21 @@ export function SettingsTab() {
   } = useBrainstormerStore()
 
   const [tagsInput, setTagsInput] = useState(settings.github.tags.join(', '))
+  const [showCloudKey, setShowCloudKey] = useState(false)
+  const [showLocalKey, setShowLocalKey] = useState(false)
 
   // ── Handlers ──
 
   const handleLLMModelChange = (value: string) => {
     setSettings({ llmModel: value as LLMModel })
+  }
+
+  const handleCloudModelChange = (value: string) => {
+    setSettings({ cloudModel: value as CloudModel })
+  }
+
+  const handleLocalModelChange = (value: string) => {
+    setSettings({ localModel: value as LocalModel })
   }
 
   const handleQuestionCountChange = (value: number[]) => {
@@ -73,7 +113,6 @@ export function SettingsTab() {
       return
     }
 
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel()
 
     const utterance = new SpeechSynthesisUtterance("Hello! I'm your brainstorming assistant.")
@@ -81,8 +120,6 @@ export function SettingsTab() {
     utterance.pitch = 1.0
 
     if (settings.ttsEngine === 'kokoro') {
-      // In a real Tauri app, this would invoke the Kokoro TTS engine
-      // For browser fallback, we use the built-in synthesis with a lower pitch
       utterance.pitch = 0.9
     }
 
@@ -100,7 +137,6 @@ export function SettingsTab() {
   const handleAutoPopulateToggle = (checked: boolean) => {
     setGitHubConfig({ autoPopulate: checked })
     if (checked && settings.github.repoUrl) {
-      // Simulate auto-populate from GitHub URL
       const urlParts = settings.github.repoUrl.replace(/\/$/, '').split('/')
       const repoName = urlParts[urlParts.length - 1] || ''
       const owner = urlParts[urlParts.length - 2] || ''
@@ -126,7 +162,6 @@ export function SettingsTab() {
       return
     }
 
-    // Basic GitHub URL validation
     const githubPattern = /^https?:\/\/github\.com\/[\w.-]+\/[\w.-]+\/?$/
     if (!githubPattern.test(url)) {
       toast.error('Invalid GitHub URL. Use format: https://github.com/user/repo')
@@ -135,7 +170,6 @@ export function SettingsTab() {
 
     toast.success('GitHub repository connected')
 
-    // Auto-populate if enabled
     if (settings.github.autoPopulate) {
       const urlParts = url.replace(/\/$/, '').split('/')
       const repoName = urlParts[urlParts.length - 1] || ''
@@ -158,7 +192,6 @@ export function SettingsTab() {
   }
 
   const handleClearSessions = () => {
-    // Reset sessions by creating a fresh store state
     useBrainstormerStore.setState({ sessions: [] })
     toast.success('All sessions cleared')
   }
@@ -167,6 +200,12 @@ export function SettingsTab() {
     useBrainstormerStore.setState({
       settings: {
         llmModel: 'cloud',
+        cloudApiKey: '',
+        cloudModel: 'claude-sonnet-4-20250514',
+        localApiKey: '',
+        localModel: 'llama3.1',
+        localEndpoint: 'http://localhost:11434',
+        localCustomModel: '',
         questionCount: 5,
         researchMode: false,
         ttsEngine: 'browser',
@@ -185,6 +224,17 @@ export function SettingsTab() {
     toast.success('All settings reset to defaults')
   }
 
+  // ── Helper: model display name ──
+  const getModelDisplay = () => {
+    if (settings.llmModel === 'cloud') {
+      return CLOUD_MODELS.find(m => m.value === settings.cloudModel)?.label ?? settings.cloudModel
+    }
+    if (settings.localModel === 'custom') {
+      return settings.localCustomModel || 'Custom'
+    }
+    return LOCAL_MODELS.find(m => m.value === settings.localModel)?.label ?? settings.localModel
+  }
+
   // ── Render ──
 
   return (
@@ -197,10 +247,12 @@ export function SettingsTab() {
             <Cloud className="size-3" />
             AI Model
           </h3>
+
+          {/* Cloud / Local radio */}
           <RadioGroup
             value={settings.llmModel}
             onValueChange={handleLLMModelChange}
-            className="space-y-2"
+            className="space-y-1.5"
           >
             <div className="flex items-center gap-2 rounded bg-white/5 p-2 border border-white/5 hover:border-white/10 transition-colors">
               <RadioGroupItem value="cloud" id="llm-cloud" className="border-white/30 data-[state=checked]:border-amber-500 data-[state=checked]:text-amber-500" />
@@ -209,7 +261,6 @@ export function SettingsTab() {
                   <Cloud className="size-3.5 text-amber-400" />
                   <span className="text-xs text-white/90">Cloud</span>
                 </div>
-                <p className="text-[10px] text-white/40 mt-0.5 ml-5">Cloud AI (Gemini/OpenAI)</p>
               </Label>
             </div>
             <div className="flex items-center gap-2 rounded bg-white/5 p-2 border border-white/5 hover:border-white/10 transition-colors">
@@ -219,14 +270,144 @@ export function SettingsTab() {
                   <Monitor className="size-3.5 text-emerald-400" />
                   <span className="text-xs text-white/90">Local</span>
                 </div>
-                <p className="text-[10px] text-white/40 mt-0.5 ml-5">Local model (Ollama/LM Studio)</p>
               </Label>
             </div>
           </RadioGroup>
+
+          <Separator className="bg-white/10" />
+
+          {/* ── Cloud settings (shown when cloud selected) ── */}
+          {settings.llmModel === 'cloud' && (
+            <div className="space-y-2">
+              {/* Cloud model dropdown */}
+              <div className="space-y-1">
+                <Label className="text-[10px] text-white/50 uppercase tracking-wider">Model</Label>
+                <Select value={settings.cloudModel} onValueChange={handleCloudModelChange}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white/90 text-xs h-8 focus:border-amber-500/50 focus:ring-amber-500/30">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-800 border-white/10">
+                    {CLOUD_MODELS.map((model) => (
+                      <SelectItem key={model.value} value={model.value} className="text-xs text-white/80 focus:bg-white/10 focus:text-white">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-white/40">{model.provider}</span>
+                          <span>{model.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Cloud API key */}
+              <div className="space-y-1">
+                <Label className="text-[10px] text-white/50 uppercase tracking-wider flex items-center gap-1">
+                  <Key className="size-2.5" />
+                  API Key
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={showCloudKey ? 'text' : 'password'}
+                    value={settings.cloudApiKey}
+                    onChange={(e) => setSettings({ cloudApiKey: e.target.value })}
+                    placeholder="sk-ant-... or sk-..."
+                    className="bg-white/5 border-white/10 text-white/90 text-xs h-8 pr-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
+                  />
+                  <button
+                    onClick={() => setShowCloudKey(!showCloudKey)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                    type="button"
+                  >
+                    {showCloudKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </div>
+                <p className="text-[9px] text-white/25">Required for Claude, GPT-4o, Gemini</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Local settings (shown when local selected) ── */}
+          {settings.llmModel === 'local' && (
+            <div className="space-y-2">
+              {/* Local model dropdown */}
+              <div className="space-y-1">
+                <Label className="text-[10px] text-white/50 uppercase tracking-wider">Model</Label>
+                <Select value={settings.localModel} onValueChange={handleLocalModelChange}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white/90 text-xs h-8 focus:border-amber-500/50 focus:ring-amber-500/30">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-800 border-white/10">
+                    {LOCAL_MODELS.map((model) => (
+                      <SelectItem key={model.value} value={model.value} className="text-xs text-white/80 focus:bg-white/10 focus:text-white">
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Custom model name (when custom selected) */}
+              {settings.localModel === 'custom' && (
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-white/50 uppercase tracking-wider">Custom Model Name</Label>
+                  <Input
+                    value={settings.localCustomModel}
+                    onChange={(e) => setSettings({ localCustomModel: e.target.value })}
+                    placeholder="my-model:latest"
+                    className="bg-white/5 border-white/10 text-white/90 text-xs h-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
+                  />
+                </div>
+              )}
+
+              {/* Local endpoint */}
+              <div className="space-y-1">
+                <Label className="text-[10px] text-white/50 uppercase tracking-wider flex items-center gap-1">
+                  <Server className="size-2.5" />
+                  Endpoint
+                </Label>
+                <Input
+                  value={settings.localEndpoint}
+                  onChange={(e) => setSettings({ localEndpoint: e.target.value })}
+                  placeholder="http://localhost:11434"
+                  className="bg-white/5 border-white/10 text-white/90 text-xs h-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
+                />
+                <p className="text-[9px] text-white/25">Ollama default: http://localhost:11434</p>
+              </div>
+
+              {/* Local API key (optional) */}
+              <div className="space-y-1">
+                <Label className="text-[10px] text-white/50 uppercase tracking-wider flex items-center gap-1">
+                  <Key className="size-2.5" />
+                  API Key
+                  <span className="text-amber-400/50">(optional)</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={showLocalKey ? 'text' : 'password'}
+                    value={settings.localApiKey}
+                    onChange={(e) => setSettings({ localApiKey: e.target.value })}
+                    placeholder="Only if your local server requires it"
+                    className="bg-white/5 border-white/10 text-white/90 text-xs h-8 pr-8 placeholder:text-white/20 focus:border-amber-500/50 focus:ring-amber-500/30"
+                  />
+                  <button
+                    onClick={() => setShowLocalKey(!showLocalKey)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                    type="button"
+                  >
+                    {showLocalKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Model status indicator */}
-          <div className="flex items-center gap-2 text-xs text-white/30">
+          <div className="flex items-center gap-2 text-[10px] text-white/30">
             <div className={`size-2 rounded-full ${settings.llmModel === 'cloud' ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`} />
-            <span>Active: {settings.llmModel === 'cloud' ? 'Cloud AI' : 'Local Model'}</span>
+            <span>Active: {getModelDisplay()}</span>
+            {settings.llmModel === 'cloud' && !settings.cloudApiKey && (
+              <span className="text-red-400/70">⚠ No API key</span>
+            )}
           </div>
         </section>
 

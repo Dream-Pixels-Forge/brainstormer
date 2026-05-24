@@ -386,7 +386,7 @@ export function ChatTab() {
               variant="outline"
               className="text-[10px] px-1.5 py-0 h-5 border-white/10 text-white/60 bg-white/5"
             >
-              {settings.llmModel === 'cloud' ? '☁️ Cloud' : '💻 Local'}
+              {settings.llmModel === 'cloud' ? `☁️ ${settings.cloudModel}` : `💻 ${settings.localModel === 'custom' ? settings.localCustomModel || 'custom' : settings.localModel}`}
             </Badge>
           </div>
         </div>

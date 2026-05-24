@@ -10,6 +10,9 @@ export type WorkflowStage = 'spark' | 'analyzing' | 'chat' | 'generating' | 'exp
 export type LLMModel = 'cloud' | 'local'
 export type TTSEngine = 'kokoro' | 'browser'
 
+export type CloudModel = 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514' | 'claude-haiku-4-20250514' | 'gpt-4o' | 'gpt-4o-mini' | 'gemini-2.0-flash'
+export type LocalModel = 'llama3.1' | 'llama3.1:70b' | 'mistral' | 'codellama' | 'phi3' | 'qwen2.5' | 'deepseek-coder' | 'gemma2' | 'custom'
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -34,6 +37,15 @@ export interface GitHubConfig {
 
 export interface Settings {
   llmModel: LLMModel
+  // Cloud model settings
+  cloudApiKey: string
+  cloudModel: CloudModel
+  // Local model settings
+  localApiKey: string          // optional — some local servers support API keys
+  localModel: LocalModel
+  localEndpoint: string        // e.g. http://localhost:11434 (Ollama default)
+  localCustomModel: string     // custom model name when localModel is 'custom'
+  // General
   questionCount: number        // how many Q&A rounds (default 5)
   researchMode: boolean        // LLM does web research before answering
   ttsEngine: TTSEngine
@@ -131,6 +143,12 @@ interface BrainstormerState {
 
 const defaultSettings: Settings = {
   llmModel: 'cloud',
+  cloudApiKey: '',
+  cloudModel: 'claude-sonnet-4-20250514',
+  localApiKey: '',
+  localModel: 'llama3.1',
+  localEndpoint: 'http://localhost:11434',
+  localCustomModel: '',
   questionCount: 5,
   researchMode: false,
   ttsEngine: 'browser',
