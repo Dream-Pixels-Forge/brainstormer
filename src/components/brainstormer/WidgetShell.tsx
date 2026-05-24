@@ -171,9 +171,6 @@ export function WidgetShell() {
           onClick={handleRestore}
           data-tauri-drag-region
         >
-          <div className="flex size-6 items-center justify-center rounded-md bg-amber-500/20">
-            <img src="/brainstormer-icon.png" alt="" className="size-4 rounded" />
-          </div>
           <span className="text-xs font-medium text-white/70 group-hover:text-white/90 transition-colors">
             Brainstormer
           </span>
@@ -202,9 +199,6 @@ export function WidgetShell() {
           data-tauri-drag-region
         >
           <div className="flex items-center gap-2 flex-1 min-w-0" data-tauri-drag-region>
-            <div className="flex size-5 items-center justify-center rounded bg-amber-500/20 shrink-0">
-              <img src="/brainstormer-icon.png" alt="Brainstormer" className="size-3 rounded" />
-            </div>
             <span className="font-semibold text-white text-xs tracking-wide">Brainstormer</span>
             <span className="text-[9px] text-amber-400/60 font-medium ml-1">
               {stageLabel[stage] || ''}
