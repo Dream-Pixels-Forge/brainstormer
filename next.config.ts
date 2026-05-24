@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
     ".z.ai",
     ".chatglm.cn",
   ],
+  serverExternalPackages: [
+    "onnxruntime-node",
+    "kokoro-js",
+    "@huggingface/transformers",
+  ],
 };
 
 export default nextConfig;

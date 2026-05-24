@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   Cloud, Monitor, FlaskConical, Volume2,
   Github, Link, Tag, FileText, Trash2, RotateCcw,
   Database, Plug, TestTube, Key, Eye, EyeOff, Server,
+  Download, CheckCircle2, AlertCircle, Loader2,
 } from 'lucide-react'
 import { useBrainstormerStore, type LLMModel, type TTSEngine, type CloudModel, type LocalModel } from '@/lib/brainstormer-store'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -61,6 +62,62 @@ export function SettingsTab() {
   const [tagsInput, setTagsInput] = useState(settings.github.tags.join(', '))
   const [showCloudKey, setShowCloudKey] = useState(false)
   const [showLocalKey, setShowLocalKey] = useState(false)
+
+  // ── Kokoro model status ──
+  const [kokoroStatus, setKokoroStatus] = useState<{
+    ready: boolean
+    loading: boolean
+    progress: number
+    error: string | null
+    downloaded: boolean
+  }>({ ready: false, loading: false, progress: 0, error: null, downloaded: false })
+  const kokoroPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const pollKokoroStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/kokoro/status')
+      const data = await res.json()
+      setKokoroStatus(data)
+      // Stop polling if done
+      if (data.ready || (data.error && !data.loading)) {
+        if (kokoroPollRef.current) {
+          clearInterval(kokoroPollRef.current)
+          kokoroPollRef.current = null
+        }
+      }
+    } catch {
+      // ignore poll errors
+    }
+  }, [])
+
+  // Initial check on mount
+  useEffect(() => {
+    pollKokoroStatus()
+  }, [pollKokoroStatus])
+
+  const handleDownloadKokoro = useCallback(async () => {
+    try {
+      const res = await fetch('/api/kokoro/download', { method: 'POST' })
+      const data = await res.json()
+      setKokoroStatus(prev => ({ ...prev, loading: true, error: null }))
+      toast.info('Kokoro model download started (~86MB)...')
+      // Start polling for progress
+      if (!kokoroPollRef.current) {
+        kokoroPollRef.current = setInterval(pollKokoroStatus, 2000)
+      }
+    } catch {
+      toast.error('Failed to start Kokoro model download')
+    }
+  }, [pollKokoroStatus])
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (kokoroPollRef.current) {
+        clearInterval(kokoroPollRef.current)
+      }
+    }
+  }, [])
 
   // ── Dynamic Ollama models ──
   const [ollamaModels, setOllamaModels] = useState<string[]>([])
@@ -148,37 +205,65 @@ export function SettingsTab() {
     setSettings({ ttsEngine: value as TTSEngine })
   }
 
-  const handleTestVoice = useCallback(() => {
+  const handleTestVoice = useCallback(async () => {
     if (!settings.ttsEnabled) {
       toast.info('Enable TTS first to test voice')
       return
     }
 
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      toast.error('Speech synthesis not available in this browser')
-      return
-    }
-
-    window.speechSynthesis.cancel()
-
-    const utterance = new SpeechSynthesisUtterance("Hello! I'm your brainstorming assistant.")
-    utterance.rate = 1.0
-    utterance.pitch = 1.0
-
     if (settings.ttsEngine === 'kokoro') {
-      utterance.pitch = 0.9
-    }
+      // Use Kokoro backend
+      if (!kokoroStatus.ready) {
+        toast.error('Kokoro model not loaded. Download it first.')
+        return
+      }
+      try {
+        toast.info('Generating Kokoro voice test...')
+        const res = await fetch('/api/kokoro/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: "Hello! I'm your brainstorming assistant.",
+            voice: 'af_heart',
+          }),
+        })
+        const data = await res.json()
+        if (data.error) {
+          toast.error(data.error)
+          return
+        }
+        // Play base64 WAV audio
+        const audio = new Audio(`data:audio/wav;base64,${data.audioBase64}`)
+        audio.onended = () => toast.success('Kokoro voice test complete')
+        audio.onerror = () => toast.error('Audio playback failed')
+        audio.play()
+      } catch {
+        toast.error('Kokoro voice test failed')
+      }
+    } else {
+      // Browser TTS
+      if (typeof window === 'undefined' || !window.speechSynthesis) {
+        toast.error('Speech synthesis not available in this browser')
+        return
+      }
 
-    utterance.onend = () => {
-      toast.success('Voice test complete')
-    }
-    utterance.onerror = () => {
-      toast.error('Voice test failed')
-    }
+      window.speechSynthesis.cancel()
 
-    window.speechSynthesis.speak(utterance)
-    toast.info('Playing voice test...')
-  }, [settings.ttsEnabled, settings.ttsEngine])
+      const utterance = new SpeechSynthesisUtterance("Hello! I'm your brainstorming assistant.")
+      utterance.rate = 1.0
+      utterance.pitch = 1.0
+
+      utterance.onend = () => {
+        toast.success('Voice test complete')
+      }
+      utterance.onerror = () => {
+        toast.error('Voice test failed')
+      }
+
+      window.speechSynthesis.speak(utterance)
+      toast.info('Playing voice test...')
+    }
+  }, [settings.ttsEnabled, settings.ttsEngine, kokoroStatus.ready])
 
   const handleAutoPopulateToggle = (checked: boolean) => {
     setGitHubConfig({ autoPopulate: checked })
@@ -604,12 +689,77 @@ export function SettingsTab() {
             </RadioGroup>
           </div>
 
+          {/* ── Kokoro model download (shown only when Kokoro selected & model not ready) ── */}
+          {settings.ttsEngine === 'kokoro' && !kokoroStatus.ready && (
+            <div className="rounded-md bg-amber-500/5 border border-amber-500/20 p-2.5 space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="size-4 text-amber-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-white/80 font-medium">Kokoro Model Required</p>
+                  <p className="text-[10px] text-white/40">~86MB · Downloaded once, cached locally</p>
+                </div>
+              </div>
+
+              {/* Download progress */}
+              {kokoroStatus.loading && (
+                <div className="space-y-1.5">
+                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-amber-500 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${kokoroStatus.progress}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-white/40 flex items-center gap-1">
+                      <Loader2 className="size-2.5 animate-spin" />
+                      Downloading model...
+                    </span>
+                    <span className="text-[10px] text-amber-400 font-medium">{kokoroStatus.progress}%</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {kokoroStatus.error && !kokoroStatus.loading && (
+                <p className="text-[10px] text-red-400/80 flex items-center gap-1">
+                  <AlertCircle className="size-2.5" />
+                  {kokoroStatus.error}
+                </p>
+              )}
+
+              {/* Download button */}
+              {!kokoroStatus.loading && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadKokoro}
+                  className="w-full border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300"
+                >
+                  <Download className="size-3.5 mr-1.5" />
+                  Download Kokoro Model
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Kokoro ready indicator */}
+          {settings.ttsEngine === 'kokoro' && kokoroStatus.ready && (
+            <div className="flex items-center gap-2 rounded-md bg-emerald-500/5 border border-emerald-500/20 p-2">
+              <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white/80 font-medium">Kokoro Model Ready</p>
+                <p className="text-[10px] text-white/40">82M params · q8 quantized · Running locally</p>
+              </div>
+            </div>
+          )}
+
           {/* Test voice button */}
           <Button
             variant="outline"
             size="sm"
             onClick={handleTestVoice}
-            className="w-full border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+            disabled={settings.ttsEngine === 'kokoro' && !kokoroStatus.ready}
+            className="w-full border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-40"
           >
             <TestTube className="size-3.5 mr-1.5" />
             Test Voice
