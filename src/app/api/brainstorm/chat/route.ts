@@ -6,11 +6,21 @@ interface ChatMessageInput {
   content: string
 }
 
+interface SettingsInput {
+  llmModel: string
+  questionCount: number
+  researchMode: boolean
+  ttsEnabled: boolean
+  ttsEngine: string
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { messages, promptConfig } = await request.json()
+    const body = await request.json()
+    const { messages, idea, ideaAnalysis, settings, questionIndex, promptConfig } = body
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    // Support both new Q&A flow and legacy promptConfig flow
+    if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
         { error: 'Messages are required' },
         { status: 400 }
@@ -19,8 +29,15 @@ export async function POST(request: NextRequest) {
 
     const zai = await ZAI.create()
 
-    // Build system prompt for the chat context
-    const systemPrompt = buildChatSystemPrompt(promptConfig)
+    // Build system prompt based on which flow is being used
+    let systemPrompt: string
+    if (idea) {
+      systemPrompt = buildQASystemPrompt(idea, ideaAnalysis, settings as SettingsInput, questionIndex as number)
+    } else if (promptConfig) {
+      systemPrompt = buildLegacySystemPrompt(promptConfig)
+    } else {
+      systemPrompt = buildQASystemPrompt('', '', null, 0)
+    }
 
     // Build the messages array for the AI
     const aiMessages: { role: 'assistant' | 'user'; content: string }[] = [
@@ -63,7 +80,60 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function buildChatSystemPrompt(config: {
+/**
+ * System prompt for the Q&A brainstorming flow.
+ * Instructs the LLM to ask ONE clarifying question at a time.
+ */
+function buildQASystemPrompt(
+  idea: string,
+  ideaAnalysis: string,
+  settings: SettingsInput | null,
+  questionIndex: number
+): string {
+  const parts = [
+    'You are an expert brainstorming companion conducting a structured Q&A session. Your job is to help the user explore and refine their idea by asking ONE clarifying question at a time.',
+    '',
+    'CRITICAL RULES:',
+    '- Ask exactly ONE question per response. Do not ask multiple questions.',
+    '- Keep your question focused and specific.',
+    '- Before asking, briefly acknowledge the user\'s previous answer (1-2 sentences max).',
+    '- Build on what the user has already shared — don\'t repeat topics already covered.',
+    '- Progress from broad exploration to specific details across the conversation.',
+    '- Be encouraging but honest about potential challenges.',
+    '- Keep responses concise (2-4 sentences before your question).',
+    '- End every response with a clear, single question.',
+  ]
+
+  if (idea) {
+    parts.push(`\nThe user's original idea: "${idea}"`)
+  }
+
+  if (ideaAnalysis) {
+    parts.push(`\nInitial analysis of the idea: ${ideaAnalysis}`)
+  }
+
+  if (settings) {
+    if (settings.researchMode) {
+      parts.push('\nResearch mode is ON. Incorporate broader context, market trends, and evidence-based insights into your questions.')
+    }
+
+    parts.push(`\nThis is question ${questionIndex + 1} of ${settings.questionCount} total questions.`)
+
+    if (questionIndex === 0) {
+      parts.push('This is the first question. Start by asking about the core problem or motivation behind the idea.')
+    } else if (questionIndex >= settings.questionCount - 2) {
+      parts.push('We\'re near the end. Focus on actionable next steps, implementation details, or success metrics.')
+    }
+  }
+
+  return parts.join('\n')
+}
+
+/**
+ * Legacy system prompt for the old promptConfig-based chat flow.
+ * Kept for backward compatibility.
+ */
+function buildLegacySystemPrompt(config: {
   persona: string
   platform: string
   tone: string

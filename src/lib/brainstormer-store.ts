@@ -3,141 +3,223 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-// Types
-export interface PromptConfig {
-  persona: string
-  platform: string
-  tone: string
-  format: string
-  topic: string
-  customInstructions: string
-}
+// ── Types ──────────────────────────────────────────────
+
+export type WidgetTab = 'spark' | 'chat' | 'export' | 'settings'
+export type WorkflowStage = 'spark' | 'analyzing' | 'chat' | 'generating' | 'export'
+export type LLMModel = 'cloud' | 'local'
+export type TTSEngine = 'kokoro' | 'browser'
 
 export interface ChatMessage {
   id: string
-  role: 'user' | 'assistant' | 'system'
+  role: 'user' | 'assistant'
   content: string
   timestamp: number
+  spoken?: boolean // whether TTS has spoken this message
+}
+
+export interface ProjectFile {
+  filename: string
+  content: string
+  description: string
+}
+
+export interface GitHubConfig {
+  repoUrl: string
+  projectName: string
+  description: string
+  tags: string[]
+  autoPopulate: boolean
+}
+
+export interface Settings {
+  llmModel: LLMModel
+  questionCount: number        // how many Q&A rounds (default 5)
+  researchMode: boolean        // LLM does web research before answering
+  ttsEngine: TTSEngine
+  ttsEnabled: boolean          // voice output on/off
+  github: GitHubConfig
 }
 
 export interface Session {
   id: string
-  name: string
+  idea: string
   createdAt: number
-  promptConfig: PromptConfig
   messages: ChatMessage[]
-  generatedContent: string
+  files: ProjectFile[]
+  settings: Settings
 }
 
-export type WidgetTab = 'prompt' | 'chat' | 'voice' | 'export' | 'history'
-
-export interface VoiceBookmark {
-  id: string
-  timestamp: number
-  label: string
-}
+// ── State Interface ─────────────────────────────────────
 
 interface BrainstormerState {
-  // Widget shell state
+  // Widget
   isOpen: boolean
   isMinimized: boolean
   activeTab: WidgetTab
-  position: { x: number; y: number }
+  alwaysOnTop: boolean
 
-  // Prompt builder state
-  promptConfig: PromptConfig
+  // Workflow
+  stage: WorkflowStage
+  idea: string                   // the raw idea from Spark
+  ideaAnalysis: string           // LLM's initial analysis of the idea
 
-  // Chat state
+  // Chat / Q&A
   messages: ChatMessage[]
   isChatLoading: boolean
+  currentQuestionIndex: number   // which Q&A round we're on (0-based)
+  qaComplete: boolean            // all questions answered?
 
-  // Generation state
-  isGenerating: boolean
-  generatedContent: string
-
-  // Voice state
+  // Voice
   isRecording: boolean
   recordingDuration: number
-  bookmarks: VoiceBookmark[]
+  isSpeaking: boolean            // TTS currently speaking
 
-  // Sessions state
+  // Export
+  projectFiles: ProjectFile[]
+  isGeneratingFiles: boolean
+
+  // Settings
+  settings: Settings
+
+  // Sessions
   sessions: Session[]
-  currentSessionId: string | null
 
-  // Actions
+  // ── Actions ──
+
+  // Widget
   setOpen: (open: boolean) => void
   toggleOpen: () => void
   setMinimized: (minimized: boolean) => void
   setActiveTab: (tab: WidgetTab) => void
-  setPosition: (pos: { x: number; y: number }) => void
+  setAlwaysOnTop: (onTop: boolean) => void
 
-  setPromptConfig: (config: Partial<PromptConfig>) => void
-  resetPromptConfig: () => void
-  applyTemplate: (template: PromptConfig) => void
+  // Workflow
+  setStage: (stage: WorkflowStage) => void
+  setIdea: (idea: string) => void
+  setIdeaAnalysis: (analysis: string) => void
+  startWorkflow: (idea: string) => void
+  resetWorkflow: () => void
 
+  // Chat
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void
   clearMessages: () => void
   setChatLoading: (loading: boolean) => void
+  incrementQuestionIndex: () => void
+  setQaComplete: (complete: boolean) => void
 
-  setGenerating: (generating: boolean) => void
-  setGeneratedContent: (content: string) => void
-
+  // Voice
   setRecording: (recording: boolean) => void
   setRecordingDuration: (duration: number) => void
-  addBookmark: (bookmark: VoiceBookmark) => void
-  removeBookmark: (id: string) => void
+  setSpeaking: (speaking: boolean) => void
 
-  saveSession: (name?: string) => void
+  // Export
+  setProjectFiles: (files: ProjectFile[]) => void
+  setGeneratingFiles: (generating: boolean) => void
+
+  // Settings
+  setSettings: (settings: Partial<Settings>) => void
+  setGitHubConfig: (config: Partial<GitHubConfig>) => void
+
+  // Sessions
+  saveSession: () => void
   restoreSession: (id: string) => void
   deleteSession: (id: string) => void
-  setCurrentSessionId: (id: string | null) => void
 }
 
-const defaultPromptConfig: PromptConfig = {
-  persona: '',
-  platform: '',
-  tone: '',
-  format: '',
-  topic: '',
-  customInstructions: '',
+// ── Defaults ────────────────────────────────────────────
+
+const defaultSettings: Settings = {
+  llmModel: 'cloud',
+  questionCount: 5,
+  researchMode: false,
+  ttsEngine: 'browser',
+  ttsEnabled: true,
+  github: {
+    repoUrl: '',
+    projectName: '',
+    description: '',
+    tags: [],
+    autoPopulate: false,
+  },
 }
+
+// ── Store ───────────────────────────────────────────────
 
 export const useBrainstormerStore = create<BrainstormerState>()(
   persist(
     (set, get) => ({
-      // Initial state
+      // Widget
       isOpen: false,
       isMinimized: false,
-      activeTab: 'prompt',
-      position: { x: 0, y: 0 },
+      activeTab: 'spark',
+      alwaysOnTop: false,
 
-      promptConfig: { ...defaultPromptConfig },
+      // Workflow
+      stage: 'spark',
+      idea: '',
+      ideaAnalysis: '',
 
+      // Chat
       messages: [],
       isChatLoading: false,
+      currentQuestionIndex: 0,
+      qaComplete: false,
 
-      isGenerating: false,
-      generatedContent: '',
-
+      // Voice
       isRecording: false,
       recordingDuration: 0,
-      bookmarks: [],
+      isSpeaking: false,
 
+      // Export
+      projectFiles: [],
+      isGeneratingFiles: false,
+
+      // Settings
+      settings: { ...defaultSettings },
+
+      // Sessions
       sessions: [],
-      currentSessionId: null,
 
-      // Actions
+      // ── Actions ──
+
       setOpen: (open) => set({ isOpen: open }),
       toggleOpen: () => set((s) => ({ isOpen: !s.isOpen, isMinimized: s.isOpen ? false : s.isMinimized })),
       setMinimized: (minimized) => set({ isMinimized: minimized }),
       setActiveTab: (tab) => set({ activeTab: tab }),
-      setPosition: (pos) => set({ position: pos }),
+      setAlwaysOnTop: (onTop) => set({ alwaysOnTop: onTop }),
 
-      setPromptConfig: (config) =>
-        set((s) => ({ promptConfig: { ...s.promptConfig, ...config } })),
-      resetPromptConfig: () => set({ promptConfig: { ...defaultPromptConfig } }),
-      applyTemplate: (template) => set({ promptConfig: { ...template } }),
+      // Workflow
+      setStage: (stage) => set({ stage }),
+      setIdea: (idea) => set({ idea }),
+      setIdeaAnalysis: (analysis) => set({ ideaAnalysis: analysis }),
+      startWorkflow: (idea) => {
+        set({
+          idea,
+          stage: 'analyzing',
+          messages: [],
+          currentQuestionIndex: 0,
+          qaComplete: false,
+          projectFiles: [],
+          ideaAnalysis: '',
+        })
+      },
+      resetWorkflow: () => {
+        set({
+          stage: 'spark',
+          idea: '',
+          ideaAnalysis: '',
+          messages: [],
+          currentQuestionIndex: 0,
+          qaComplete: false,
+          projectFiles: [],
+          isChatLoading: false,
+          isGeneratingFiles: false,
+          activeTab: 'spark',
+        })
+      },
 
+      // Chat
       addMessage: (message) =>
         set((s) => ({
           messages: [
@@ -151,57 +233,75 @@ export const useBrainstormerStore = create<BrainstormerState>()(
         })),
       clearMessages: () => set({ messages: [] }),
       setChatLoading: (loading) => set({ isChatLoading: loading }),
+      incrementQuestionIndex: () =>
+        set((s) => {
+          const nextIndex = s.currentQuestionIndex + 1
+          const isComplete = nextIndex >= s.settings.questionCount
+          return {
+            currentQuestionIndex: nextIndex,
+            qaComplete: isComplete,
+            ...(isComplete ? { stage: 'generating' as WorkflowStage, activeTab: 'export' as WidgetTab } : {}),
+          }
+        }),
+      setQaComplete: (complete) => set({ qaComplete: complete }),
 
-      setGenerating: (generating) => set({ isGenerating: generating }),
-      setGeneratedContent: (content) => set({ generatedContent: content }),
-
+      // Voice
       setRecording: (recording) => set({ isRecording: recording }),
       setRecordingDuration: (duration) => set({ recordingDuration: duration }),
-      addBookmark: (bookmark) =>
-        set((s) => ({ bookmarks: [...s.bookmarks, bookmark] })),
-      removeBookmark: (id) =>
-        set((s) => ({ bookmarks: s.bookmarks.filter((b) => b.id !== id) })),
+      setSpeaking: (speaking) => set({ isSpeaking: speaking }),
 
-      saveSession: (name) => {
+      // Export
+      setProjectFiles: (files) => set({ projectFiles: files, stage: 'export' }),
+      setGeneratingFiles: (generating) => set({ isGeneratingFiles: generating }),
+
+      // Settings
+      setSettings: (settings) =>
+        set((s) => ({ settings: { ...s.settings, ...settings } })),
+      setGitHubConfig: (config) =>
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            github: { ...s.settings.github, ...config },
+          },
+        })),
+
+      // Sessions
+      saveSession: () => {
         const state = get()
-        const sessionName = name || `Session ${state.sessions.length + 1}`
         const session: Session = {
           id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-          name: sessionName,
+          idea: state.idea,
           createdAt: Date.now(),
-          promptConfig: { ...state.promptConfig },
           messages: [...state.messages],
-          generatedContent: state.generatedContent,
+          files: [...state.projectFiles],
+          settings: { ...state.settings },
         }
-        set((s) => ({
-          sessions: [session, ...s.sessions],
-          currentSessionId: session.id,
-        }))
+        set((s) => ({ sessions: [session, ...s.sessions] }))
       },
       restoreSession: (id) => {
         const session = get().sessions.find((s) => s.id === id)
         if (session) {
           set({
-            promptConfig: { ...session.promptConfig },
+            idea: session.idea,
             messages: [...session.messages],
-            generatedContent: session.generatedContent,
-            currentSessionId: session.id,
-            activeTab: 'prompt',
+            projectFiles: [...session.files],
+            settings: { ...session.settings },
+            stage: 'export',
+            activeTab: 'export',
           })
         }
       },
       deleteSession: (id) =>
         set((s) => ({
           sessions: s.sessions.filter((sess) => sess.id !== id),
-          currentSessionId: s.currentSessionId === id ? null : s.currentSessionId,
         })),
-      setCurrentSessionId: (id) => set({ currentSessionId: id }),
     }),
     {
-      name: 'brainstormer-storage',
+      name: 'brainstormer-v2-storage',
       partialize: (state) => ({
         sessions: state.sessions,
-        position: state.position,
+        settings: state.settings,
+        alwaysOnTop: state.alwaysOnTop,
       }),
     }
   )

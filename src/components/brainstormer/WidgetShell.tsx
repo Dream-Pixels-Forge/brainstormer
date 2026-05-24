@@ -3,27 +3,24 @@
 import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Sparkles, MessageCircle, Mic, Download, Clock,
-  Minus, X, Brain, Settings, Pin, PinOff,
+  Sparkles, MessageCircle, Download, Settings2,
+  Minus, X, Brain, Pin, PinOff,
 } from 'lucide-react'
 import { useBrainstormerStore, type WidgetTab } from '@/lib/brainstormer-store'
-import { PromptBuilder } from './PromptBuilder'
-import { ChatPanel } from './ChatPanel'
-import { VoiceRecorder } from './VoiceRecorder'
-import { ExportPanel } from './ExportPanel'
-import { HistoryPanel } from './HistoryPanel'
+import { SparkTab } from './SparkTab'
+import { ChatTab } from './ChatTab'
+import { ExportTab } from './ExportTab'
+import { SettingsTab } from './SettingsTab'
 
 const tabs: { id: WidgetTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'prompt', label: 'Spark', icon: <Sparkles className="size-4" /> },
+  { id: 'spark', label: 'Spark', icon: <Sparkles className="size-4" /> },
   { id: 'chat', label: 'Chat', icon: <MessageCircle className="size-4" /> },
-  { id: 'voice', label: 'Voice', icon: <Mic className="size-4" /> },
   { id: 'export', label: 'Export', icon: <Download className="size-4" /> },
-  { id: 'history', label: 'History', icon: <Clock className="size-4" /> },
+  { id: 'settings', label: 'Settings', icon: <Settings2 className="size-4" /> },
 ]
 
 /**
  * Tauri-aware window management helpers.
- * These call Tauri APIs when available, fallback to browser APIs otherwise.
  */
 const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
@@ -62,21 +59,22 @@ export function WidgetShell() {
     isOpen,
     isMinimized,
     activeTab,
+    stage,
     setActiveTab,
     setOpen,
     setMinimized,
+    setAlwaysOnTop: setStoreAlwaysOnTop,
+    alwaysOnTop,
   } = useBrainstormerStore()
 
-  const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(false)
   const [isCompact, setIsCompact] = useState(false)
 
   // Auto-open on mount (Tauri launches with widget visible)
   useEffect(() => {
     setOpen(true)
-    // Mount-only effect: auto-show widget
   }, [])
 
-  // Window control handlers — defined before useEffect that references them
+  // Window control handlers
   const handleMinimize = useCallback(() => {
     if (isTauri()) {
       tauriHideWindow()
@@ -87,7 +85,6 @@ export function WidgetShell() {
 
   const handleClose = useCallback(() => {
     if (isTauri()) {
-      // In Tauri, close hides to system tray instead of quitting
       tauriHideWindow()
     } else {
       setOpen(false)
@@ -105,7 +102,6 @@ export function WidgetShell() {
           setOpen(!isOpen)
         }
       }
-      // Escape to minimize
       if (e.key === 'Escape' && isOpen && !isMinimized) {
         handleMinimize()
       }
@@ -115,27 +111,35 @@ export function WidgetShell() {
   }, [isOpen, isMinimized, setOpen, handleMinimize])
 
   const handleAlwaysOnTop = useCallback(async () => {
-    const newState = !isAlwaysOnTop
-    setIsAlwaysOnTop(newState)
+    const newState = !alwaysOnTop
+    setStoreAlwaysOnTop(newState)
     await tauriSetAlwaysOnTop(newState)
-  }, [isAlwaysOnTop])
+  }, [alwaysOnTop, setStoreAlwaysOnTop])
 
   const handleRestore = useCallback(() => {
     setMinimized(false)
   }, [setMinimized])
 
+  // Stage-based tab indicator
+  const stageLabel: Record<string, string> = {
+    spark: 'New Idea',
+    analyzing: 'Analyzing...',
+    chat: 'Q&A Session',
+    generating: 'Generating...',
+    export: 'Ready',
+  }
+
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'prompt': return <PromptBuilder />
-      case 'chat': return <ChatPanel />
-      case 'voice': return <VoiceRecorder />
-      case 'export': return <ExportPanel />
-      case 'history': return <HistoryPanel />
-      default: return <PromptBuilder />
+      case 'spark': return <SparkTab />
+      case 'chat': return <ChatTab />
+      case 'export': return <ExportTab />
+      case 'settings': return <SettingsTab />
+      default: return <SparkTab />
     }
   }
 
-  // Collapsed/tray state — show a floating FAB to restore
+  // Collapsed/tray state
   if (!isOpen) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-zinc-950">
@@ -156,7 +160,7 @@ export function WidgetShell() {
     )
   }
 
-  // Minimized state — show compact titlebar with restore button
+  // Minimized state
   if (isMinimized) {
     return (
       <div className="h-screen w-screen flex items-start justify-center bg-transparent pt-2">
@@ -173,16 +177,15 @@ export function WidgetShell() {
           <span className="text-xs font-medium text-white/70 group-hover:text-white/90 transition-colors">
             Brainstormer
           </span>
-          <div className="flex items-center gap-0.5 ml-2">
-            <Sparkles className="size-3 text-amber-400/50" />
-            <span className="text-[10px] text-white/30">Click to restore</span>
+          <div className="flex items-center gap-1 ml-2">
+            <div className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-[10px] text-white/40">{stageLabel[stage] || 'Ready'}</span>
           </div>
         </motion.div>
       </div>
     )
   }
 
-  // Full widget — this IS the Tauri window content
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-zinc-950/95 p-3">
       <motion.div
@@ -193,70 +196,52 @@ export function WidgetShell() {
           isCompact ? 'max-h-[400px]' : ''
         }`}
       >
-        {/* Custom Titlebar — acts as Tauri drag region */}
+        {/* Custom Titlebar */}
         <div
           className="flex items-center gap-3 px-4 py-2.5 border-b border-white/10 select-none shrink-0"
           data-tauri-drag-region
         >
-          {/* App icon + title */}
           <div className="flex items-center gap-2 flex-1 min-w-0" data-tauri-drag-region>
             <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/20 shrink-0">
-              <img
-                src="/brainstormer-icon.png"
-                alt="Brainstormer"
-                className="size-4 rounded"
-              />
+              <img src="/brainstormer-icon.png" alt="Brainstormer" className="size-4 rounded" />
             </div>
-            <span className="font-semibold text-white text-sm tracking-wide">
-              Brainstormer
+            <span className="font-semibold text-white text-sm tracking-wide">Brainstormer</span>
+            <span className="text-[10px] text-amber-400/60 font-medium ml-1">
+              {stageLabel[stage] || ''}
             </span>
           </div>
 
-          {/* Window controls */}
           <div className="flex items-center gap-0.5">
-            {/* Always on top toggle */}
             <button
               onClick={handleAlwaysOnTop}
               className={`flex size-7 items-center justify-center rounded-md transition-colors ${
-                isAlwaysOnTop
-                  ? 'text-amber-400 bg-amber-500/10'
-                  : 'text-white/40 hover:text-white hover:bg-white/10'
+                alwaysOnTop ? 'text-amber-400 bg-amber-500/10' : 'text-white/40 hover:text-white hover:bg-white/10'
               }`}
-              aria-label={isAlwaysOnTop ? 'Unpin from top' : 'Pin to top'}
-              title={isAlwaysOnTop ? 'Unpin' : 'Pin on top'}
+              aria-label={alwaysOnTop ? 'Unpin' : 'Pin on top'}
+              title={alwaysOnTop ? 'Unpin' : 'Pin on top'}
             >
-              {isAlwaysOnTop ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+              {alwaysOnTop ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
             </button>
-
-            {/* Compact toggle */}
             <button
               onClick={() => setIsCompact(!isCompact)}
               className={`flex size-7 items-center justify-center rounded-md transition-colors ${
-                isCompact
-                  ? 'text-amber-400 bg-amber-500/10'
-                  : 'text-white/40 hover:text-white hover:bg-white/10'
+                isCompact ? 'text-amber-400 bg-amber-500/10' : 'text-white/40 hover:text-white hover:bg-white/10'
               }`}
-              aria-label={isCompact ? 'Expand' : 'Compact mode'}
+              aria-label={isCompact ? 'Expand' : 'Compact'}
             >
               <Minus className="size-3.5" />
             </button>
-
-            {/* Minimize (hide to tray in Tauri) */}
             <button
               onClick={handleMinimize}
               className="flex size-7 items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Minimize to tray"
-              title="Minimize to tray"
+              aria-label="Minimize"
             >
               <Minus className="size-4" />
             </button>
-
-            {/* Close (hide to tray in Tauri, toggle off in browser) */}
             <button
               onClick={handleClose}
               className="flex size-7 items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              aria-label="Hide to tray"
-              title="Hide to tray"
+              aria-label="Close"
             >
               <X className="size-3.5" />
             </button>
@@ -305,20 +290,20 @@ export function WidgetShell() {
         {/* Status bar */}
         <div className="flex items-center justify-between px-3 py-1.5 border-t border-white/5 shrink-0">
           <div className="flex items-center gap-1.5">
-            <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div className={`size-1.5 rounded-full animate-pulse ${
+              stage === 'analyzing' || stage === 'generating' ? 'bg-amber-500' : 'bg-emerald-500'
+            }`} />
             <span className="text-[10px] text-white/30">
-              {isTauri() ? 'Desktop' : 'Web'} · AI Ready
+              {isTauri() ? 'Desktop' : 'Web'} · {stage === 'analyzing' || stage === 'generating' ? 'Working...' : 'AI Ready'}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {isAlwaysOnTop && (
+            {alwaysOnTop && (
               <span className="text-[10px] text-amber-400/60 flex items-center gap-1">
                 <Pin className="size-2.5" /> Pinned
               </span>
             )}
-            <span className="text-[10px] text-white/20">
-              Ctrl+Shift+B
-            </span>
+            <span className="text-[10px] text-white/20">Ctrl+Shift+B</span>
           </div>
         </div>
       </motion.div>
