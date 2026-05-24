@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Brain, Mic, MicOff, Sparkles, RotateCcw, Loader2 } from 'lucide-react'
+import { Brain, Mic, MicOff, Sparkles, RotateCcw, Loader2, History, LayoutTemplate, X } from 'lucide-react'
 import { useBrainstormerStore } from '@/lib/brainstormer-store'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -101,11 +101,16 @@ export function SparkTab() {
     setStage,
     setRecording,
     settings,
+    sessions,
+    restoreSession,
+    deleteSession,
   } = useBrainstormerStore()
 
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isRecordingLocal, setIsRecordingLocal] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -297,6 +302,33 @@ export function SparkTab() {
 
   const isIdeaEmpty = idea.trim().length === 0
 
+  // ── Quick-start templates ──────────────────────────────
+  const templates = [
+    { label: 'SaaS App', idea: 'A SaaS application that solves [problem] for [audience] with [key feature] as the core value proposition' },
+    { label: 'Mobile App', idea: 'A mobile app for [audience] to [action], featuring [key feature] and [secondary feature]' },
+    { label: 'API Service', idea: 'A REST/GraphQL API service that provides [capability] with [integration] support and [scaling approach]' },
+    { label: 'AI Tool', idea: 'An AI-powered tool that uses [model/approach] to [action] for [audience], differentiating by [unique value]' },
+    { label: 'Open Source', idea: 'An open-source [type] project for [community] that improves on [existing solution] by [key advantage]' },
+    { label: 'E-commerce', idea: 'An e-commerce platform for [niche] with [unique feature], targeting [market] through [channel]' },
+  ]
+
+  const handleTemplate = (tpl: typeof templates[number]) => {
+    setIdea(tpl.idea)
+    setShowTemplates(false)
+    toast.info(`Template applied: ${tpl.label}`)
+  }
+
+  const handleRestoreSession = (id: string) => {
+    restoreSession(id)
+    setShowHistory(false)
+    toast.success('Session restored')
+  }
+
+  const handleDeleteSession = (id: string) => {
+    deleteSession(id)
+    toast.success('Session deleted')
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-full p-4 gap-3">
       {/* Glowing brain icon */}
@@ -324,18 +356,72 @@ export function SparkTab() {
           disabled={isAnalyzing}
         />
 
-        {/* Action row: New Idea | Mic | Spark It */}
-        <div className="flex items-center gap-3">
-          {/* New Idea — left */}
+        {/* Action row: New | History | Mic | Template | Spark */}
+        <div className="flex items-center gap-2">
+          {/* New — far left */}
           <button
             onClick={handleNewIdea}
-            className="flex flex-col items-center justify-center gap-1 w-14 shrink-0 group"
+            className="flex flex-col items-center justify-center gap-1 w-11 shrink-0 group"
           >
-            <div className="flex size-9 items-center justify-center rounded-lg bg-white/5 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 transition-colors">
-              <RotateCcw className="size-4 text-white/40 group-hover:text-white/70 transition-colors" />
+            <div className="flex size-8 items-center justify-center rounded-lg bg-white/5 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 transition-colors">
+              <RotateCcw className="size-3.5 text-white/40 group-hover:text-white/70 transition-colors" />
             </div>
             <span className="text-[9px] text-white/30 group-hover:text-white/60 transition-colors leading-none">New</span>
           </button>
+
+          {/* History — left of mic */}
+          <div className="relative flex flex-col items-center">
+            <button
+              onClick={() => { setShowHistory(!showHistory); setShowTemplates(false) }}
+              className={`flex flex-col items-center justify-center gap-1 w-11 shrink-0 group ${showHistory ? 'z-30' : ''}`}
+            >
+              <div className={`flex size-8 items-center justify-center rounded-lg border transition-colors ${
+                showHistory
+                  ? 'bg-white/10 border-white/20 text-white/80'
+                  : 'bg-white/5 border-white/10 group-hover:bg-white/10 group-hover:border-white/20'
+              }`}>
+                <History className={`size-3.5 transition-colors ${showHistory ? 'text-amber-400' : 'text-white/40 group-hover:text-white/70'}`} />
+              </div>
+              <span className={`text-[9px] leading-none transition-colors ${showHistory ? 'text-amber-400' : 'text-white/30 group-hover:text-white/60'}`}>History</span>
+            </button>
+
+            {/* History popover */}
+            {showHistory && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setShowHistory(false)} />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 z-30 rounded-lg bg-zinc-800 border border-white/10 shadow-xl overflow-hidden">
+                  <div className="px-3 py-2 border-b border-white/10">
+                    <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">Saved Sessions</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto scrollbar-thin">
+                    {sessions.length === 0 ? (
+                      <div className="px-3 py-4 text-center">
+                        <p className="text-[10px] text-white/30">No saved sessions yet</p>
+                      </div>
+                    ) : (
+                      sessions.map((session) => (
+                        <div key={session.id} className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 transition-colors group/item">
+                          <button
+                            onClick={() => handleRestoreSession(session.id)}
+                            className="flex-1 text-left min-w-0"
+                          >
+                            <p className="text-[11px] text-white/80 truncate">{session.idea}</p>
+                            <p className="text-[9px] text-white/30">{new Date(session.createdAt).toLocaleDateString()}</p>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSession(session.id)}
+                            className="size-5 flex items-center justify-center rounded text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0 opacity-0 group-hover/item:opacity-100"
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Mic — center, big and prominent */}
           <div className="flex flex-col items-center gap-1.5 flex-1">
@@ -373,17 +459,58 @@ export function SparkTab() {
             )}
           </div>
 
-          {/* Spark It — right */}
+          {/* Template — right of mic */}
+          <div className="relative flex flex-col items-center">
+            <button
+              onClick={() => { setShowTemplates(!showTemplates); setShowHistory(false) }}
+              className={`flex flex-col items-center justify-center gap-1 w-11 shrink-0 group ${showTemplates ? 'z-30' : ''}`}
+            >
+              <div className={`flex size-8 items-center justify-center rounded-lg border transition-colors ${
+                showTemplates
+                  ? 'bg-white/10 border-white/20 text-white/80'
+                  : 'bg-white/5 border-white/10 group-hover:bg-white/10 group-hover:border-white/20'
+              }`}>
+                <LayoutTemplate className={`size-3.5 transition-colors ${showTemplates ? 'text-amber-400' : 'text-white/40 group-hover:text-white/70'}`} />
+              </div>
+              <span className={`text-[9px] leading-none transition-colors ${showTemplates ? 'text-amber-400' : 'text-white/30 group-hover:text-white/60'}`}>Template</span>
+            </button>
+
+            {/* Templates popover */}
+            {showTemplates && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setShowTemplates(false)} />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 z-30 rounded-lg bg-zinc-800 border border-white/10 shadow-xl overflow-hidden">
+                  <div className="px-3 py-2 border-b border-white/10">
+                    <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">Quick Start Templates</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto scrollbar-thin">
+                    {templates.map((tpl) => (
+                      <button
+                        key={tpl.label}
+                        onClick={() => handleTemplate(tpl)}
+                        className="w-full text-left px-3 py-2 hover:bg-white/5 transition-colors"
+                      >
+                        <p className="text-[11px] text-white/80 font-medium">{tpl.label}</p>
+                        <p className="text-[9px] text-white/30 truncate">{tpl.idea}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Spark — far right */}
           <button
             onClick={handleSparkIt}
             disabled={isIdeaEmpty || isAnalyzing}
-            className="flex flex-col items-center justify-center gap-1 w-14 shrink-0 group disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex flex-col items-center justify-center gap-1 w-11 shrink-0 group disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <div className="flex size-9 items-center justify-center rounded-lg bg-amber-500 group-hover:bg-amber-400 transition-colors shadow-md shadow-amber-500/20">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500 group-hover:bg-amber-400 transition-colors shadow-md shadow-amber-500/20">
               {isAnalyzing ? (
-                <Loader2 className="size-4 text-black animate-spin" />
+                <Loader2 className="size-3.5 text-black animate-spin" />
               ) : (
-                <Sparkles className="size-4 text-black" />
+                <Sparkles className="size-3.5 text-black" />
               )}
             </div>
             <span className="text-[9px] text-amber-400/80 group-hover:text-amber-300 transition-colors leading-none font-medium">
