@@ -314,7 +314,7 @@ export function SparkTab() {
       </div>
 
       {/* Text input area */}
-      <div className="w-full max-w-md space-y-2">
+      <div className="w-full max-w-md space-y-3">
         <Textarea
           value={idea}
           onChange={(e) => setIdea(e.target.value)}
@@ -324,70 +324,74 @@ export function SparkTab() {
           disabled={isAnalyzing}
         />
 
-        {/* Voice input row */}
-        <div className="flex items-center gap-2">
+        {/* Action row: New Idea | Mic | Spark It */}
+        <div className="flex items-center gap-3">
+          {/* New Idea — left */}
           <button
-            onClick={isRecordingLocal ? stopVoiceRecording : startVoiceRecording}
-            className={`size-9 rounded-full flex items-center justify-center transition-all shadow-lg shrink-0 ${
-              isRecordingLocal
-                ? 'bg-red-500 hover:bg-red-400 shadow-red-500/30 animate-pulse'
-                : 'bg-red-500/80 hover:bg-red-400 shadow-red-500/20'
-            }`}
-            aria-label={isRecordingLocal ? 'Stop recording' : 'Start voice input'}
-            disabled={isAnalyzing || isTranscribing}
+            onClick={handleNewIdea}
+            className="flex flex-col items-center justify-center gap-1 w-14 shrink-0 group"
           >
-            {isRecordingLocal ? (
-              <MicOff className="size-4 text-white" />
-            ) : (
-              <Mic className="size-4 text-white" />
-            )}
+            <div className="flex size-9 items-center justify-center rounded-lg bg-white/5 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 transition-colors">
+              <RotateCcw className="size-4 text-white/40 group-hover:text-white/70 transition-colors" />
+            </div>
+            <span className="text-[9px] text-white/30 group-hover:text-white/60 transition-colors leading-none">New</span>
           </button>
 
-          <div className="flex-1">
+          {/* Mic — center, big and prominent */}
+          <div className="flex flex-col items-center gap-1.5 flex-1">
+            <button
+              onClick={isRecordingLocal ? stopVoiceRecording : startVoiceRecording}
+              className={`relative size-14 rounded-full flex items-center justify-center transition-all shadow-lg shrink-0 ${
+                isRecordingLocal
+                  ? 'bg-red-500 hover:bg-red-400 shadow-red-500/40'
+                  : 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 shadow-red-500/30'
+              }`}
+              aria-label={isRecordingLocal ? 'Stop recording' : 'Start voice input'}
+              disabled={isAnalyzing || isTranscribing}
+            >
+              {/* Pulse ring when recording */}
+              {isRecordingLocal && (
+                <span className="absolute inset-0 rounded-full animate-ping bg-red-400/30" />
+              )}
+              {isTranscribing ? (
+                <Loader2 className="size-6 text-white animate-spin relative z-10" />
+              ) : isRecordingLocal ? (
+                <MicOff className="size-6 text-white relative z-10" />
+              ) : (
+                <Mic className="size-6 text-white relative z-10" />
+              )}
+            </button>
             {isRecordingLocal ? (
-              <div className="space-y-0.5">
-                <p className="text-[10px] text-red-400 font-medium">Recording...</p>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[9px] text-red-400 font-medium leading-none">Recording</span>
                 <WaveformBars isActive />
               </div>
             ) : isTranscribing ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="size-3 text-amber-400 animate-spin" />
-                <span className="text-[10px] text-white/50">Transcribing...</span>
-              </div>
+              <span className="text-[9px] text-amber-400/70 leading-none">Transcribing...</span>
             ) : (
-              <p className="text-[10px] text-white/30">Tap mic to speak your idea</p>
+              <span className="text-[9px] text-white/25 leading-none">Speak</span>
             )}
           </div>
+
+          {/* Spark It — right */}
+          <button
+            onClick={handleSparkIt}
+            disabled={isIdeaEmpty || isAnalyzing}
+            className="flex flex-col items-center justify-center gap-1 w-14 shrink-0 group disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <div className="flex size-9 items-center justify-center rounded-lg bg-amber-500 group-hover:bg-amber-400 transition-colors shadow-md shadow-amber-500/20">
+              {isAnalyzing ? (
+                <Loader2 className="size-4 text-black animate-spin" />
+              ) : (
+                <Sparkles className="size-4 text-black" />
+              )}
+            </div>
+            <span className="text-[9px] text-amber-400/80 group-hover:text-amber-300 transition-colors leading-none font-medium">
+              {isAnalyzing ? 'Wait' : 'Spark'}
+            </span>
+          </button>
         </div>
-
-        {/* Spark It button */}
-        <Button
-          onClick={handleSparkIt}
-          disabled={isIdeaEmpty || isAnalyzing}
-          className="w-full h-9 text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {isAnalyzing ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <Sparkles className="size-4" />
-              Spark It
-            </>
-          )}
-        </Button>
       </div>
-
-      {/* New Idea link */}
-      <button
-        onClick={handleNewIdea}
-        className="text-[10px] text-white/30 hover:text-white/60 transition-colors flex items-center gap-1 mt-auto"
-      >
-        <RotateCcw className="size-2.5" />
-        New Idea
-      </button>
 
       {/* Waveform animation keyframes */}
       <style dangerouslySetInnerHTML={{ __html: `
