@@ -193,7 +193,7 @@ export function WidgetShell() {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         className={`flex flex-col w-full max-w-[400px] rounded-2xl border border-white/10 bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden widget-focused ${
-          isCompact ? 'max-h-[340px]' : 'max-h-[480px]'
+          isCompact ? 'h-[340px]' : 'h-[480px]'
         }`}
       >
         {/* Custom Titlebar */}

@@ -248,18 +248,18 @@ export function ExportTab() {
   const renderStatus = () => {
     if (isGeneratingFiles) {
       return (
-        <div className="flex items-center gap-2 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <Loader2 className="size-4 text-amber-400 animate-spin" />
-          <span className="text-sm text-amber-300">Generating project files...</span>
+        <div className="flex items-center gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+          <Loader2 className="size-3.5 text-amber-400 animate-spin" />
+          <span className="text-xs text-amber-300">Generating project files...</span>
         </div>
       )
     }
 
     if (projectFiles.length > 0) {
       return (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+        <div className="flex items-center justify-between p-2.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-emerald-300">✨ {projectFiles.length} files generated</span>
+            <span className="text-xs text-emerald-300">✨ {projectFiles.length} files generated</span>
           </div>
           <Button
             variant="ghost"
@@ -277,8 +277,8 @@ export function ExportTab() {
 
     // No files and not generating
     return (
-      <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
-        <span className="text-sm text-white/50">Complete the Q&A first</span>
+      <div className="flex items-center justify-between p-2.5 rounded-md bg-white/5 border border-white/10">
+        <span className="text-xs text-white/50">Complete the Q&A first</span>
         <Button
           variant="ghost"
           size="sm"
@@ -312,7 +312,7 @@ export function ExportTab() {
           ))}
 
           {projectFiles.length === 0 && !isGeneratingFiles && (
-            <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
+            <div className="flex flex-col items-center justify-center py-8 text-center gap-2 min-h-[180px]">
               <div className="size-9 rounded-full bg-white/5 flex items-center justify-center">
                 <FileText className="size-4 text-white/20" />
               </div>
