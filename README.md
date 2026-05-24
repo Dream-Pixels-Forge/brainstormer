@@ -1,8 +1,10 @@
 # Brainstormer
 
-> AI-powered brainstorming assistant for writers and designers.
+AI-powered brainstorming assistant for writers and designers.
+Prompt builder, interactive Q&A companion, and multi-format export engine powered by AI.
 
-Prompt builder, interactive Q&A companion, and multi-format export engine powered by Google Gemini AI.
+<img width="414" height="494" alt="preview" src="https://github.com/user-attachments/assets/551b7211-254f-4a5b-802b-31546c2a7e79" />
+
 
 ## Tech Stack
 
